@@ -11,7 +11,7 @@ import { LoginDto } from './dto/login.dto';
 
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
-import { CurrentUser } from './detectors/current-user.decorator';
+import { CurrentUser } from './detectors/create-user.decorator';
 import { Roles } from './detectors/roles.decorator';
 
 
