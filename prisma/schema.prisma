@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  USER
+}
+
+model User {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  password    String
+  role        Role         @default(USER)
+
+  profile     Profile?
+  experiences Experience[]
+  projects    Project[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Profile {
+  id          String    @id @default(uuid())
+
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fullName    String
+  headline    String?
+  bio         String?   @db.Text
+
+  profileImage String?
+  cvUrl        String?
+
+  skills      String[]
+  services    String[]
+
+  contactEmail String?
+  phoneNumber  String?
+  location     String?
+
+  isPublic    Boolean   @default(true)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Experience {
+  id           String      @id @default(uuid())
+
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  company      String
+  position     String
+  description  String?     @db.Text
+
+  startDate    DateTime
+  endDate      DateTime?
+
+  companyLogo  String?
+
+  isPublic     Boolean     @default(true)
+
+  projects      Project[]
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Project {
+  id             String       @id @default(uuid())
+
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  experienceId   String?
+  experience     Experience?  @relation(fields: [experienceId], references: [id], onDelete: SetNull)
+
+  title          String
+  description    String?      @db.Text
+
+  thumbnail      String?
+
+  images         String[]
+  techStacks     String[]
+
+  projectUrl     String?
+  githubUrl      String?
+
+  role           String?
+
+  isPublic       Boolean      @default(true)
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
