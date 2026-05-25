@@ -12,6 +12,13 @@ enum Role {
   USER
 }
 
+enum ProjectType {
+  WORK
+  FREELANCE
+  PERSONAL
+  OPEN_SOURCE
+}
+
 model User {
   id          String       @id @default(uuid())
   email       String       @unique
@@ -84,6 +91,8 @@ model Project {
 
   experienceId   String?
   experience     Experience?  @relation(fields: [experienceId], references: [id], onDelete: SetNull)
+
+  type           ProjectType  @default(PERSONAL)
 
   title          String
   description    String?      @db.Text

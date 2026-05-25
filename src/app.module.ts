@@ -8,6 +8,7 @@ import { ProfilesModule } from './profiles/profiles.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { ExperiencesModule } from './experiences/experiences.module';
 import { AdminModule } from './admin/admin.module';
+import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AdminModule } from './admin/admin.module';
     CloudinaryModule,
     ExperiencesModule,
     AdminModule,
+    ProjectsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
