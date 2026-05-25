@@ -50,6 +50,21 @@ export class ProfilesService {
         });
     }
 
+    async updateProfileImage(
+        userId: string,
+        imageUrl: string,
+    ) {
+        return this.prisma.profile.update({
+            where: {
+                userId,
+            },
+
+            data: {
+                profileImage: imageUrl,
+            },
+        });
+    }
+
     async getPublicProfile(userId: string) {
         const profile =
             await this.prisma.profile.findFirst({

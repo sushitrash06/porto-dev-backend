@@ -5,12 +5,14 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProfilesModule } from './profiles/profiles.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
     PrismaModule,
     AuthModule,
     ProfilesModule,
+    CloudinaryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

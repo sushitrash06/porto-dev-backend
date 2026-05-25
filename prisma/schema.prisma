@@ -37,6 +37,7 @@ model Profile {
   bio         String?   @db.Text
 
   profileImage String?
+  bannerImage  String?
   cvUrl        String?
 
   skills      String[]
