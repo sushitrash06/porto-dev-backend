@@ -107,4 +107,25 @@ export class ProjectsController {
     ) {
         return this.projectsService.remove(user.userId, id);
     }
+
+    @UseGuards(JwtAuthGuard)
+    @Delete(':id/images')
+    async removeProjectImage(
+        @CurrentUser() user: any,
+
+        @Param('id') id: string,
+
+        @Body('imageUrl')
+        imageUrl: string,
+    ) {
+        await this.cloudinaryService.deleteImageByUrl(
+            imageUrl,
+        );
+
+        return this.projectsService.removeProjectImage(
+            user.userId,
+            id,
+            imageUrl,
+        );
+    }
 }

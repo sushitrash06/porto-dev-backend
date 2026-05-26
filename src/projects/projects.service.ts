@@ -194,6 +194,120 @@ export class ProjectsService {
         });
     }
 
+    findAllAdmin(query: {
+        userId?: string;
+        type?: string;
+        search?: string;
+        page: number;
+        limit: number;
+    }) {
+        const page = query.page || 1;
+        const limit = query.limit || 10;
+        const skip = (page - 1) * limit;
+
+        return this.prisma.project.findMany({
+            where: {
+                ...(query.userId && {
+                    userId: query.userId,
+                }),
+
+                ...(query.type && {
+                    type: query.type as any,
+                }),
+
+                ...(query.search && {
+                    OR: [
+                        {
+                            title: {
+                                contains: query.search,
+                                mode: 'insensitive',
+                            },
+                        },
+                        {
+                            description: {
+                                contains: query.search,
+                                mode: 'insensitive',
+                            },
+                        },
+                        {
+                            role: {
+                                contains: query.search,
+                                mode: 'insensitive',
+                            },
+                        },
+                        {
+                            techStacks: {
+                                has: query.search,
+                            },
+                        },
+                    ],
+                }),
+            },
+
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        role: true,
+                    },
+                },
+                experience: true,
+            },
+
+            orderBy: {
+                createdAt: 'desc',
+            },
+
+            skip,
+            take: limit,
+        });
+    }
+
+
+
+    async findOneOwned(userId: string, projectId: string) {
+        const project = await this.prisma.project.findUnique({
+            where: { id: projectId },
+        });
+
+        if (!project) {
+            throw new NotFoundException('Project not found');
+        }
+
+        if (project.userId !== userId) {
+            throw new ForbiddenException(
+                'You can only access your own project',
+            );
+        }
+
+        return project;
+    }
+
+    async removeProjectImage(
+        userId: string,
+        projectId: string,
+        imageUrl: string,
+    ) {
+        const project =
+            await this.findOneOwned(
+                userId,
+                projectId,
+            );
+
+        return this.prisma.project.update({
+            where: {
+                id: projectId,
+            },
+
+            data: {
+                images: project.images.filter(
+                    (img) => img !== imageUrl,
+                ),
+            },
+        });
+    }
+
     async remove(userId: string, projectId: string) {
         const project =
             await this.prisma.project.findUnique({

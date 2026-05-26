@@ -16,7 +16,6 @@ import { ProfilesService } from './profiles.service';
 
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
-
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { CurrentUser } from 'src/auth/detectors/create-user.decorator';
 import { UpdateProfileDto } from 'src/auth/dto/update-profile.dto';
@@ -31,9 +30,7 @@ export class ProfilesController {
     @UseGuards(JwtAuthGuard)
     @Get('me')
     me(@CurrentUser() user: any) {
-        return this.profilesService.getMyProfile(
-            user.userId,
-        );
+        return this.profilesService.getMyProfile(user.userId);
     }
 
     @UseGuards(JwtAuthGuard)
@@ -50,22 +47,22 @@ export class ProfilesController {
 
     @UseGuards(JwtAuthGuard)
     @Post('me/image')
-    @UseInterceptors(
-        FileInterceptor('file'),
-    )
+    @UseInterceptors(FileInterceptor('file'))
     async uploadProfileImage(
         @CurrentUser() user: any,
-
-        @UploadedFile()
-        file: Express.Multer.File,
+        @UploadedFile() file: Express.Multer.File,
     ) {
-        const uploadedImage =
-            await this.cloudinaryService.uploadImage(
-                file,
-            );
+        const currentProfile =
+            await this.profilesService.getMyProfile(user.userId);
 
-        const imageUrl = (uploadedImage as any)
-            .secure_url;
+        const uploadedImage =
+            await this.cloudinaryService.uploadImage(file);
+
+        await this.cloudinaryService.deleteImageByUrl(
+            currentProfile?.profileImage,
+        );
+
+        const imageUrl = (uploadedImage as any).secure_url;
 
         return this.profilesService.updateProfileImage(
             user.userId,
@@ -74,11 +71,7 @@ export class ProfilesController {
     }
 
     @Get(':userId')
-    getPublic(
-        @Param('userId') userId: string,
-    ) {
-        return this.profilesService.getPublicProfile(
-            userId,
-        );
+    getPublic(@Param('userId') userId: string) {
+        return this.profilesService.getPublicProfile(userId);
     }
 }

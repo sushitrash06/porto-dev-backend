@@ -1,4 +1,5 @@
 import {
+    ForbiddenException,
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
@@ -64,7 +65,6 @@ export class ProfilesService {
             },
         });
     }
-
     async getPublicProfile(userId: string) {
         const profile =
             await this.prisma.profile.findFirst({
