@@ -122,6 +122,78 @@ export class ProjectsService {
         });
     }
 
+    async updateThumbnail(
+        userId: string,
+        projectId: string,
+        imageUrl: string,
+    ) {
+        const project =
+            await this.prisma.project.findUnique({
+                where: {
+                    id: projectId,
+                },
+            });
+
+        if (!project) {
+            throw new NotFoundException(
+                'Project not found',
+            );
+        }
+
+        if (project.userId !== userId) {
+            throw new ForbiddenException(
+                'You can only update your own project',
+            );
+        }
+
+        return this.prisma.project.update({
+            where: {
+                id: projectId,
+            },
+
+            data: {
+                thumbnail: imageUrl,
+            },
+        });
+    }
+
+    async addProjectImage(
+        userId: string,
+        projectId: string,
+        imageUrl: string,
+    ) {
+        const project =
+            await this.prisma.project.findUnique({
+                where: {
+                    id: projectId,
+                },
+            });
+
+        if (!project) {
+            throw new NotFoundException(
+                'Project not found',
+            );
+        }
+
+        if (project.userId !== userId) {
+            throw new ForbiddenException(
+                'You can only update your own project',
+            );
+        }
+
+        return this.prisma.project.update({
+            where: {
+                id: projectId,
+            },
+
+            data: {
+                images: {
+                    push: imageUrl,
+                },
+            },
+        });
+    }
+
     async remove(userId: string, projectId: string) {
         const project =
             await this.prisma.project.findUnique({

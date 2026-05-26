@@ -9,6 +9,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { ExperiencesModule } from './experiences/experiences.module';
 import { AdminModule } from './admin/admin.module';
 import { ProjectsModule } from './projects/projects.module';
+import { PortfolioModule } from './portfolio/portfolio.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ProjectsModule } from './projects/projects.module';
     ExperiencesModule,
     AdminModule,
     ProjectsModule,
+    PortfolioModule,
   ],
   controllers: [AppController],
   providers: [AppService],
