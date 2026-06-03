@@ -55,14 +55,57 @@ export class UsersService {
         });
     }
 
-    findAll() {
-        return this.prisma.user.findMany({
-            select: {
-                id: true,
-                email: true,
-                role: true,
-                createdAt: true,
+    async findAll(query: {
+        page?: number;
+        limit?: number;
+        search?: string;
+    }) {
+        const page = query.page || 1;
+        const limit = query.limit || 10;
+        const skip = (page - 1) * limit;
+
+        const where = query.search
+            ? {
+                email: {
+                    contains: query.search,
+                    mode: 'insensitive' as const,
+                },
+            }
+            : {};
+
+        const [data, total] = await Promise.all([
+            this.prisma.user.findMany({
+                where,
+                skip,
+                take: limit,
+                select: {
+                    id: true,
+                    email: true,
+                    role: true,
+                    createdAt: true,
+                    profile: {
+                        select: {
+                            fullName: true,
+                            profileImage: true,
+                        },
+                    },
+                },
+                orderBy: {
+                    createdAt: 'desc',
+                },
+            }),
+
+            this.prisma.user.count({ where }),
+        ]);
+
+        return {
+            data,
+            meta: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
             },
-        });
+        };
     }
 }

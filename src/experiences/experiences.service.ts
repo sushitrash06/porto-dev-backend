@@ -166,6 +166,28 @@ export class ExperiencesService {
         });
     }
 
+    async findOneMine(userId: string, experienceId: string) {
+        const experience =
+            await this.prisma.experience.findUnique({
+                where: { id: experienceId },
+                include: {
+                    projects: true,
+                },
+            });
+
+        if (!experience) {
+            throw new NotFoundException('Experience not found');
+        }
+
+        if (experience.userId !== userId) {
+            throw new ForbiddenException(
+                'You can only access your own experience',
+            );
+        }
+
+        return experience;
+    }
+
     findPublicByUser(userId: string) {
         return this.prisma.experience.findMany({
             where: {
@@ -183,5 +205,29 @@ export class ExperiencesService {
                 startDate: 'desc',
             },
         });
+    }
+
+    async findOnePublic(userId: string, experienceId: string) {
+        const experience =
+            await this.prisma.experience.findFirst({
+                where: {
+                    id: experienceId,
+                    userId,
+                    isPublic: true,
+                },
+                include: {
+                    projects: {
+                        where: {
+                            isPublic: true,
+                        },
+                    },
+                },
+            });
+
+        if (!experience) {
+            throw new NotFoundException('Experience not found');
+        }
+
+        return experience;
     }
 }

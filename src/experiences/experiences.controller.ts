@@ -42,12 +42,35 @@ export class ExperiencesController {
         );
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Get('me/:id')
+    findOneMine(
+        @CurrentUser() user: any,
+        @Param('id') id: string,
+    ) {
+        return this.experiencesService.findOneMine(
+            user.userId,
+            id,
+        );
+    }
+
     @Get('public/:userId')
     findPublicByUser(
         @Param('userId') userId: string,
     ) {
         return this.experiencesService.findPublicByUser(
             userId,
+        );
+    }
+
+    @Get('public/:userId/:id')
+    findOnePublic(
+        @Param('userId') userId: string,
+        @Param('id') id: string,
+    ) {
+        return this.experiencesService.findOnePublic(
+            userId,
+            id,
         );
     }
 

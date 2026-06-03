@@ -343,4 +343,23 @@ export class ProjectsService {
             },
         });
     }
+
+    async findOnePublic(userId: string, projectId: string) {
+        const project = await this.prisma.project.findFirst({
+            where: {
+                id: projectId,
+                userId,
+                isPublic: true,
+            },
+            include: {
+                experience: true,
+            },
+        });
+
+        if (!project) {
+            throw new NotFoundException('Project not found');
+        }
+
+        return project;
+    }
 }

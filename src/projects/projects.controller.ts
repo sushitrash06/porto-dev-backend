@@ -45,6 +45,18 @@ export class ProjectsController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Get('me/:id')
+    findOneMine(
+        @CurrentUser() user: any,
+        @Param('id') id: string,
+    ) {
+        return this.projectsService.findOneOwned(
+            user.userId,
+            id,
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Post(':id/thumbnail')
     @UseInterceptors(FileInterceptor('file'))
     async uploadThumbnail(
@@ -87,6 +99,17 @@ export class ProjectsController {
     @Get('public/:userId')
     findPublicByUser(@Param('userId') userId: string) {
         return this.projectsService.findPublicByUser(userId);
+    }
+
+    @Get('public/:userId/:id')
+    findOnePublic(
+        @Param('userId') userId: string,
+        @Param('id') id: string,
+    ) {
+        return this.projectsService.findOnePublic(
+            userId,
+            id,
+        );
     }
 
     @UseGuards(JwtAuthGuard)

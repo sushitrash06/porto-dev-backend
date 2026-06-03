@@ -3,6 +3,7 @@ import {
     Controller,
     Get,
     Post,
+    Query,
     UseGuards,
 } from '@nestjs/common';
 
@@ -39,7 +40,15 @@ export class UsersController {
     )
     @Roles('SUPER_ADMIN')
     @Get()
-    findAll() {
-        return this.usersService.findAll();
+    findAll(
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+    ) {
+        return this.usersService.findAll({
+            page: page ? Number(page) : 1,
+            limit: limit ? Number(limit) : 10,
+            search,
+        });
     }
 }
