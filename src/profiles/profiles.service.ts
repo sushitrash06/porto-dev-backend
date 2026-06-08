@@ -65,6 +65,36 @@ export class ProfilesService {
             },
         });
     }
+
+    async updateProfileBanner(
+        userId: string,
+        imageUrl: string,
+    ) {
+        return this.prisma.profile.update({
+            where: {
+                userId,
+            },
+
+            data: {
+                bannerImage: imageUrl,
+            },
+        });
+    }
+
+    async updateProfileCv(
+        userId: string,
+        cvUrl: string,
+    ) {
+        return this.prisma.profile.update({
+            where: {
+                userId,
+            },
+
+            data: {
+                cvUrl,
+            },
+        });
+    }
     async getPublicProfile(userId: string) {
         const profile =
             await this.prisma.profile.findFirst({

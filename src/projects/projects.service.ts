@@ -15,6 +15,8 @@ export class ProjectsService {
     private async validateExperienceOwnership(
         userId: string,
         experienceId?: string,
+        isAdmin = false,
+        projectOwnerId?: string,
     ) {
         if (!experienceId) return;
 
@@ -27,7 +29,9 @@ export class ProjectsService {
             throw new NotFoundException('Experience not found');
         }
 
-        if (experience.userId !== userId) {
+        const targetOwnerId = isAdmin && projectOwnerId ? projectOwnerId : userId;
+
+        if (experience.userId !== targetOwnerId) {
             throw new ForbiddenException(
                 'You can only attach your own experience',
             );
@@ -77,6 +81,7 @@ export class ProjectsService {
         userId: string,
         projectId: string,
         dto: UpdateProjectDto,
+        isAdmin = false,
     ) {
         const project =
             await this.prisma.project.findUnique({
@@ -87,7 +92,7 @@ export class ProjectsService {
             throw new NotFoundException('Project not found');
         }
 
-        if (project.userId !== userId) {
+        if (!isAdmin && project.userId !== userId) {
             throw new ForbiddenException(
                 'You can only update your own project',
             );
@@ -96,6 +101,8 @@ export class ProjectsService {
         await this.validateExperienceOwnership(
             userId,
             dto.experienceId,
+            isAdmin,
+            project.userId,
         );
 
         return this.prisma.project.update({
@@ -126,6 +133,7 @@ export class ProjectsService {
         userId: string,
         projectId: string,
         imageUrl: string,
+        isAdmin = false,
     ) {
         const project =
             await this.prisma.project.findUnique({
@@ -140,7 +148,7 @@ export class ProjectsService {
             );
         }
 
-        if (project.userId !== userId) {
+        if (!isAdmin && project.userId !== userId) {
             throw new ForbiddenException(
                 'You can only update your own project',
             );
@@ -161,6 +169,7 @@ export class ProjectsService {
         userId: string,
         projectId: string,
         imageUrl: string,
+        isAdmin = false,
     ) {
         const project =
             await this.prisma.project.findUnique({
@@ -175,7 +184,7 @@ export class ProjectsService {
             );
         }
 
-        if (project.userId !== userId) {
+        if (!isAdmin && project.userId !== userId) {
             throw new ForbiddenException(
                 'You can only update your own project',
             );
@@ -266,16 +275,19 @@ export class ProjectsService {
 
 
 
-    async findOneOwned(userId: string, projectId: string) {
+    async findOneOwned(userId: string, projectId: string, isAdmin = false) {
         const project = await this.prisma.project.findUnique({
             where: { id: projectId },
+            include: {
+                experience: true,
+            },
         });
 
         if (!project) {
             throw new NotFoundException('Project not found');
         }
 
-        if (project.userId !== userId) {
+        if (!isAdmin && project.userId !== userId) {
             throw new ForbiddenException(
                 'You can only access your own project',
             );
@@ -288,11 +300,13 @@ export class ProjectsService {
         userId: string,
         projectId: string,
         imageUrl: string,
+        isAdmin = false,
     ) {
         const project =
             await this.findOneOwned(
                 userId,
                 projectId,
+                isAdmin,
             );
 
         return this.prisma.project.update({
@@ -308,7 +322,7 @@ export class ProjectsService {
         });
     }
 
-    async remove(userId: string, projectId: string) {
+    async remove(userId: string, projectId: string, isAdmin = false) {
         const project =
             await this.prisma.project.findUnique({
                 where: { id: projectId },
@@ -318,7 +332,7 @@ export class ProjectsService {
             throw new NotFoundException('Project not found');
         }
 
-        if (project.userId !== userId) {
+        if (!isAdmin && project.userId !== userId) {
             throw new ForbiddenException(
                 'You can only delete your own project',
             );

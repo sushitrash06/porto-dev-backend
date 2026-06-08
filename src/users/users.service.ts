@@ -1,6 +1,7 @@
 import {
     Injectable,
     ConflictException,
+    NotFoundException,
 } from '@nestjs/common';
 
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -8,6 +9,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
+import { UpdateUserDto } from 'src/auth/dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -107,5 +109,96 @@ export class UsersService {
                 totalPages: Math.ceil(total / limit),
             },
         };
+    }
+
+    findById(id: string) {
+        return this.prisma.user.findUnique({
+            where: { id },
+        });
+    }
+
+    async updatePassword(id: string, passwordHash: string) {
+        return this.prisma.user.update({
+            where: { id },
+            data: { password: passwordHash },
+        });
+    }
+
+    async findOne(id: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                email: true,
+                role: true,
+                createdAt: true,
+                profile: true,
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        return user;
+    }
+
+    async update(id: string, dto: UpdateUserDto) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        const data: any = {};
+
+        if (dto.email) {
+            const existingUser = await this.prisma.user.findUnique({
+                where: { email: dto.email },
+            });
+            if (existingUser && existingUser.id !== id) {
+                throw new ConflictException('Email already exists');
+            }
+            data.email = dto.email;
+        }
+
+        if (dto.password) {
+            data.password = await bcrypt.hash(dto.password, 10);
+        }
+
+        if (dto.role) {
+            data.role = dto.role;
+        }
+
+        return this.prisma.user.update({
+            where: { id },
+            data,
+            select: {
+                id: true,
+                email: true,
+                role: true,
+                updatedAt: true,
+            },
+        });
+    }
+
+    async remove(id: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        return this.prisma.user.delete({
+            where: { id },
+            select: {
+                id: true,
+                email: true,
+            },
+        });
     }
 }

@@ -53,6 +53,7 @@ export class ProjectsController {
         return this.projectsService.findOneOwned(
             user.userId,
             id,
+            user.role === 'SUPER_ADMIN',
         );
     }
 
@@ -73,6 +74,7 @@ export class ProjectsController {
             user.userId,
             id,
             imageUrl,
+            user.role === 'SUPER_ADMIN',
         );
     }
 
@@ -93,6 +95,7 @@ export class ProjectsController {
             user.userId,
             id,
             imageUrl,
+            user.role === 'SUPER_ADMIN',
         );
     }
 
@@ -119,7 +122,12 @@ export class ProjectsController {
         @Param('id') id: string,
         @Body() dto: UpdateProjectDto,
     ) {
-        return this.projectsService.update(user.userId, id, dto);
+        return this.projectsService.update(
+            user.userId,
+            id,
+            dto,
+            user.role === 'SUPER_ADMIN',
+        );
     }
 
     @UseGuards(JwtAuthGuard)
@@ -128,7 +136,11 @@ export class ProjectsController {
         @CurrentUser() user: any,
         @Param('id') id: string,
     ) {
-        return this.projectsService.remove(user.userId, id);
+        return this.projectsService.remove(
+            user.userId,
+            id,
+            user.role === 'SUPER_ADMIN',
+        );
     }
 
     @UseGuards(JwtAuthGuard)
@@ -149,6 +161,7 @@ export class ProjectsController {
             user.userId,
             id,
             imageUrl,
+            user.role === 'SUPER_ADMIN',
         );
     }
 }

@@ -8,6 +8,7 @@ import {
 
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
@@ -30,6 +31,18 @@ export class AuthController {
     @Get('me')
     me(@CurrentUser() user: any) {
         return user;
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('change-password')
+    changePassword(
+        @CurrentUser() user: any,
+        @Body() dto: ChangePasswordDto,
+    ) {
+        return this.authService.changePassword(
+            user.userId,
+            dto,
+        );
     }
 
     @UseGuards(

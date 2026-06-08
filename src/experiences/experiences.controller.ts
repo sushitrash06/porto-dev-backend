@@ -51,6 +51,7 @@ export class ExperiencesController {
         return this.experiencesService.findOneMine(
             user.userId,
             id,
+            user.role === 'SUPER_ADMIN',
         );
     }
 
@@ -85,6 +86,7 @@ export class ExperiencesController {
             user.userId,
             id,
             dto,
+            user.role === 'SUPER_ADMIN',
         );
     }
 
@@ -97,6 +99,7 @@ export class ExperiencesController {
         return this.experiencesService.remove(
             user.userId,
             id,
+            user.role === 'SUPER_ADMIN',
         );
     }
 }

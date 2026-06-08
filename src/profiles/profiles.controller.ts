@@ -70,6 +70,57 @@ export class ProfilesController {
         );
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Post('me/banner')
+    @UseInterceptors(FileInterceptor('file'))
+    async uploadProfileBanner(
+        @CurrentUser() user: any,
+        @UploadedFile() file: Express.Multer.File,
+    ) {
+        const currentProfile =
+            await this.profilesService.getMyProfile(user.userId);
+
+        const uploadedImage =
+            await this.cloudinaryService.uploadImage(file);
+
+        await this.cloudinaryService.deleteImageByUrl(
+            currentProfile?.bannerImage,
+        );
+
+        const imageUrl = (uploadedImage as any).secure_url;
+
+        return this.profilesService.updateProfileBanner(
+            user.userId,
+            imageUrl,
+        );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('me/cv')
+    @UseInterceptors(FileInterceptor('file'))
+    async uploadProfileCv(
+        @CurrentUser() user: any,
+        @UploadedFile() file: Express.Multer.File,
+    ) {
+        const currentProfile =
+            await this.profilesService.getMyProfile(user.userId);
+
+        const uploadedFile =
+            await this.cloudinaryService.uploadFile(file, 'profiles', 'raw');
+
+        await this.cloudinaryService.deleteFileByUrl(
+            currentProfile?.cvUrl,
+            'raw',
+        );
+
+        const fileUrl = (uploadedFile as any).secure_url;
+
+        return this.profilesService.updateProfileCv(
+            user.userId,
+            fileUrl,
+        );
+    }
+
     @Get(':userId')
     getPublic(@Param('userId') userId: string) {
         return this.profilesService.getPublicProfile(userId);

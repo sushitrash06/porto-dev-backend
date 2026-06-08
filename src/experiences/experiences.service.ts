@@ -111,6 +111,7 @@ export class ExperiencesService {
         userId: string,
         experienceId: string,
         dto: UpdateExperienceDto,
+        isAdmin = false,
     ) {
         const experience =
             await this.prisma.experience.findUnique({
@@ -121,7 +122,7 @@ export class ExperiencesService {
             throw new NotFoundException('Experience not found');
         }
 
-        if (experience.userId !== userId) {
+        if (!isAdmin && experience.userId !== userId) {
             throw new ForbiddenException(
                 'You can only update your own experience',
             );
@@ -145,7 +146,7 @@ export class ExperiencesService {
         });
     }
 
-    async remove(userId: string, experienceId: string) {
+    async remove(userId: string, experienceId: string, isAdmin = false) {
         const experience =
             await this.prisma.experience.findUnique({
                 where: { id: experienceId },
@@ -155,7 +156,7 @@ export class ExperiencesService {
             throw new NotFoundException('Experience not found');
         }
 
-        if (experience.userId !== userId) {
+        if (!isAdmin && experience.userId !== userId) {
             throw new ForbiddenException(
                 'You can only delete your own experience',
             );
@@ -166,7 +167,7 @@ export class ExperiencesService {
         });
     }
 
-    async findOneMine(userId: string, experienceId: string) {
+    async findOneMine(userId: string, experienceId: string, isAdmin = false) {
         const experience =
             await this.prisma.experience.findUnique({
                 where: { id: experienceId },
@@ -179,7 +180,7 @@ export class ExperiencesService {
             throw new NotFoundException('Experience not found');
         }
 
-        if (experience.userId !== userId) {
+        if (!isAdmin && experience.userId !== userId) {
             throw new ForbiddenException(
                 'You can only access your own experience',
             );
