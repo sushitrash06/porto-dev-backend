@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   SUPER_ADMIN
   USER
+  BUSINESS
 }
 
 enum ProjectType {
@@ -19,18 +20,30 @@ enum ProjectType {
   OPEN_SOURCE
 }
 
+enum BusinessProjectType {
+  RESIDENTIAL
+  COMMERCIAL
+  INDUSTRIAL
+  INSTITUTIONAL
+  INFRASTRUCTURE
+  RENOVATION
+  INTERIOR_DESIGN
+  OTHER
+}
+
 model User {
-  id          String       @id @default(uuid())
-  email       String       @unique
-  password    String
-  role        Role         @default(USER)
+  id              String           @id @default(uuid())
+  email           String           @unique
+  password        String
+  role            Role             @default(USER)
 
-  profile     Profile?
-  experiences Experience[]
-  projects    Project[]
+  profile         Profile?
+  businessProfile BusinessProfile?
+  experiences     Experience[]
+  projects        Project[]
 
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 }
 
 model Profile {
@@ -111,4 +124,76 @@ model Project {
 
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+}
+
+// ─── Business Models ────────────────────────────────────────────────────────────
+
+model BusinessProfile {
+  id              String            @id @default(uuid())
+
+  userId          String            @unique
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  businessName    String
+  description     String?           @db.Text
+  logo            String?
+  bannerImage     String?
+
+  contactEmail    String?
+  phoneNumber     String?
+  location        String?
+  website         String?
+
+  isPublic        Boolean           @default(true)
+
+  services        BusinessService[]
+  projects        BusinessProject[]
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([isPublic])
+}
+
+model BusinessService {
+  id                String          @id @default(uuid())
+
+  businessProfileId String
+  businessProfile   BusinessProfile @relation(fields: [businessProfileId], references: [id], onDelete: Cascade)
+
+  name              String
+  description       String?         @db.Text
+  priceStartFrom    Int?
+
+  isPublic          Boolean         @default(true)
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([businessProfileId])
+  @@index([isPublic])
+}
+
+model BusinessProject {
+  id                String              @id @default(uuid())
+
+  businessProfileId String
+  businessProfile   BusinessProfile     @relation(fields: [businessProfileId], references: [id], onDelete: Cascade)
+
+  title             String
+  location          String?
+  year              Int?
+  description       String?             @db.Text
+  projectType       BusinessProjectType @default(OTHER)
+  clientName        String?
+  thumbnail         String?
+  images            String[]
+
+  isPublic          Boolean             @default(true)
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([businessProfileId])
+  @@index([isPublic])
 }

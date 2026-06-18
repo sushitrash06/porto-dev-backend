@@ -10,6 +10,9 @@ import { ExperiencesModule } from './experiences/experiences.module';
 import { AdminModule } from './admin/admin.module';
 import { ProjectsModule } from './projects/projects.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
+import { BusinessProfilesModule } from './business-profiles/business-profiles.module';
+import { BusinessServicesModule } from './business-services/business-services.module';
+import { BusinessProjectsModule } from './business-projects/business-projects.module';
 
 @Module({
   imports: [
@@ -21,6 +24,9 @@ import { PortfolioModule } from './portfolio/portfolio.module';
     AdminModule,
     ProjectsModule,
     PortfolioModule,
+    BusinessProfilesModule,
+    BusinessServicesModule,
+    BusinessProjectsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

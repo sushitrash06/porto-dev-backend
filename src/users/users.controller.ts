@@ -9,6 +9,7 @@ import {
     Patch,
     Delete,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 import { UsersService } from './users.service';
 
@@ -20,12 +21,15 @@ import { CreateUserDto } from 'src/auth/dto/create-user.dto';
 import { UpdateUserDto } from 'src/auth/dto/update-user.dto';
 
 
+@ApiTags('Admin/Users')
+@ApiBearerAuth()
 @Controller('users')
 export class UsersController {
     constructor(
         private readonly usersService: UsersService,
     ) { }
 
+    @ApiOperation({ summary: 'Create a new user (Admin only)' })
     @UseGuards(
         JwtAuthGuard,
         RolesGuard,
@@ -38,6 +42,7 @@ export class UsersController {
         return this.usersService.create(dto);
     }
 
+    @ApiOperation({ summary: 'Get all users with pagination and search (Admin only)' })
     @UseGuards(
         JwtAuthGuard,
         RolesGuard,
@@ -56,6 +61,7 @@ export class UsersController {
         });
     }
 
+    @ApiOperation({ summary: 'Get specific user details by ID (Admin only)' })
     @UseGuards(
         JwtAuthGuard,
         RolesGuard,
@@ -66,6 +72,7 @@ export class UsersController {
         return this.usersService.findOne(id);
     }
 
+    @ApiOperation({ summary: 'Update user details (Admin only)' })
     @UseGuards(
         JwtAuthGuard,
         RolesGuard,
@@ -79,6 +86,7 @@ export class UsersController {
         return this.usersService.update(id, dto);
     }
 
+    @ApiOperation({ summary: 'Delete user account (Admin only)' })
     @UseGuards(
         JwtAuthGuard,
         RolesGuard,

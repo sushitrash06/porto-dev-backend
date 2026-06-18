@@ -5,6 +5,7 @@ import {
     UseGuards,
     Get,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -16,23 +17,29 @@ import { CurrentUser } from './detectors/create-user.decorator';
 import { Roles } from './detectors/roles.decorator';
 
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
     constructor(
         private readonly authService: AuthService,
     ) { }
 
+    @ApiOperation({ summary: 'Login user' })
     @Post('login')
     login(@Body() dto: LoginDto) {
         return this.authService.login(dto);
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get current logged in user details' })
     @UseGuards(JwtAuthGuard)
     @Get('me')
     me(@CurrentUser() user: any) {
         return user;
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Change user password' })
     @UseGuards(JwtAuthGuard)
     @Post('change-password')
     changePassword(
@@ -45,6 +52,8 @@ export class AuthController {
         );
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Admin only access check' })
     @UseGuards(
         JwtAuthGuard,
         RolesGuard,

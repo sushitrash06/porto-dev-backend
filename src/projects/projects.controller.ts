@@ -10,6 +10,7 @@ import {
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 import { FileInterceptor } from '@nestjs/platform-express';
 
@@ -22,6 +23,7 @@ import { CurrentUser } from 'src/auth/detectors/create-user.decorator';
 import { CreateProjectDto } from 'src/auth/dto/create-projects.dto';
 import { UpdateProjectDto } from 'src/auth/dto/update-projects.dto';
 
+@ApiTags('Projects')
 @Controller('projects')
 export class ProjectsController {
     constructor(
@@ -29,6 +31,8 @@ export class ProjectsController {
         private readonly cloudinaryService: CloudinaryService,
     ) { }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Create a new personal project' })
     @UseGuards(JwtAuthGuard)
     @Post()
     create(
@@ -38,12 +42,16 @@ export class ProjectsController {
         return this.projectsService.create(user.userId, dto);
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get all personal projects of logged-in user' })
     @UseGuards(JwtAuthGuard)
     @Get('me')
     findMine(@CurrentUser() user: any) {
         return this.projectsService.findMine(user.userId);
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get a specific personal project of logged-in user' })
     @UseGuards(JwtAuthGuard)
     @Get('me/:id')
     findOneMine(
@@ -57,6 +65,8 @@ export class ProjectsController {
         );
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Upload project thumbnail' })
     @UseGuards(JwtAuthGuard)
     @Post(':id/thumbnail')
     @UseInterceptors(FileInterceptor('file'))
@@ -78,6 +88,8 @@ export class ProjectsController {
         );
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Upload an additional project image' })
     @UseGuards(JwtAuthGuard)
     @Post(':id/images')
     @UseInterceptors(FileInterceptor('file'))
@@ -99,11 +111,13 @@ export class ProjectsController {
         );
     }
 
+    @ApiOperation({ summary: 'Get public projects of a user' })
     @Get('public/:userId')
     findPublicByUser(@Param('userId') userId: string) {
         return this.projectsService.findPublicByUser(userId);
     }
 
+    @ApiOperation({ summary: 'Get details of a public project' })
     @Get('public/:userId/:id')
     findOnePublic(
         @Param('userId') userId: string,
@@ -115,6 +129,8 @@ export class ProjectsController {
         );
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Update personal project details' })
     @UseGuards(JwtAuthGuard)
     @Patch(':id')
     update(
@@ -130,6 +146,8 @@ export class ProjectsController {
         );
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Delete a personal project' })
     @UseGuards(JwtAuthGuard)
     @Delete(':id')
     remove(
@@ -143,6 +161,8 @@ export class ProjectsController {
         );
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Remove a project image by URL' })
     @UseGuards(JwtAuthGuard)
     @Delete(':id/images')
     async removeProjectImage(
@@ -164,4 +184,4 @@ export class ProjectsController {
             user.role === 'SUPER_ADMIN',
         );
     }
-}
+}

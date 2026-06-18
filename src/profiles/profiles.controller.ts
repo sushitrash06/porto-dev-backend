@@ -9,6 +9,7 @@ import {
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 import { FileInterceptor } from '@nestjs/platform-express';
 
@@ -20,6 +21,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { CurrentUser } from 'src/auth/detectors/create-user.decorator';
 import { UpdateProfileDto } from 'src/auth/dto/update-profile.dto';
 
+@ApiTags('Profiles')
 @Controller('profiles')
 export class ProfilesController {
     constructor(
@@ -27,12 +29,16 @@ export class ProfilesController {
         private readonly cloudinaryService: CloudinaryService,
     ) { }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get current user personal profile' })
     @UseGuards(JwtAuthGuard)
     @Get('me')
     me(@CurrentUser() user: any) {
         return this.profilesService.getMyProfile(user.userId);
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Update current user personal profile' })
     @UseGuards(JwtAuthGuard)
     @Patch('me')
     updateMe(
@@ -45,6 +51,8 @@ export class ProfilesController {
         );
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Upload profile image' })
     @UseGuards(JwtAuthGuard)
     @Post('me/image')
     @UseInterceptors(FileInterceptor('file'))
@@ -70,6 +78,8 @@ export class ProfilesController {
         );
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Upload profile banner image' })
     @UseGuards(JwtAuthGuard)
     @Post('me/banner')
     @UseInterceptors(FileInterceptor('file'))
@@ -95,6 +105,8 @@ export class ProfilesController {
         );
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Upload profile CV file' })
     @UseGuards(JwtAuthGuard)
     @Post('me/cv')
     @UseInterceptors(FileInterceptor('file'))
@@ -121,8 +133,9 @@ export class ProfilesController {
         );
     }
 
+    @ApiOperation({ summary: 'Get a public personal profile by userId' })
     @Get(':userId')
     getPublic(@Param('userId') userId: string) {
         return this.profilesService.getPublicProfile(userId);
     }
-}
+}

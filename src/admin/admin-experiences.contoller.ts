@@ -4,6 +4,7 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 import { ExperiencesService } from 'src/experiences/experiences.service';
 
@@ -11,6 +12,8 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/detectors/roles.decorator';
 
+@ApiTags('Admin/Experiences')
+@ApiBearerAuth()
 @Controller('admin/experiences')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('SUPER_ADMIN')
@@ -19,6 +22,7 @@ export class AdminExperiencesController {
         private readonly experiencesService: ExperiencesService,
     ) { }
 
+    @ApiOperation({ summary: 'Get all experiences with pagination and filters (Admin only)' })
     @Get()
     findAll(
         @Query('userId') userId?: string,

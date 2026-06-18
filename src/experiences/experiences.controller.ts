@@ -8,6 +8,7 @@ import {
     Post,
     UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 import { ExperiencesService } from './experiences.service';
 
@@ -16,12 +17,15 @@ import { CurrentUser } from 'src/auth/detectors/create-user.decorator';
 import { CreateExperienceDto } from 'src/auth/dto/create-experience.dto';
 import { UpdateExperienceDto } from 'src/auth/dto/update-experience.dto';
 
+@ApiTags('Experiences')
 @Controller('experiences')
 export class ExperiencesController {
     constructor(
         private readonly experiencesService: ExperiencesService,
     ) { }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Create a new personal experience record' })
     @UseGuards(JwtAuthGuard)
     @Post()
     create(
@@ -34,6 +38,8 @@ export class ExperiencesController {
         );
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get all personal experience records of logged-in user' })
     @UseGuards(JwtAuthGuard)
     @Get('me')
     findMine(@CurrentUser() user: any) {
@@ -42,6 +48,8 @@ export class ExperiencesController {
         );
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get a specific personal experience record of logged-in user' })
     @UseGuards(JwtAuthGuard)
     @Get('me/:id')
     findOneMine(
@@ -55,6 +63,7 @@ export class ExperiencesController {
         );
     }
 
+    @ApiOperation({ summary: 'Get all public experiences for a user' })
     @Get('public/:userId')
     findPublicByUser(
         @Param('userId') userId: string,
@@ -64,6 +73,7 @@ export class ExperiencesController {
         );
     }
 
+    @ApiOperation({ summary: 'Get details of a public experience record' })
     @Get('public/:userId/:id')
     findOnePublic(
         @Param('userId') userId: string,
@@ -75,6 +85,8 @@ export class ExperiencesController {
         );
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Update a personal experience record' })
     @UseGuards(JwtAuthGuard)
     @Patch(':id')
     update(
@@ -90,6 +102,8 @@ export class ExperiencesController {
         );
     }
 
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Delete a personal experience record' })
     @UseGuards(JwtAuthGuard)
     @Delete(':id')
     remove(
@@ -102,4 +116,4 @@ export class ExperiencesController {
             user.role === 'SUPER_ADMIN',
         );
     }
-}
+}
