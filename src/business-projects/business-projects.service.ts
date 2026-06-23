@@ -244,4 +244,59 @@ export class BusinessProjectsService {
 
         return project;
     }
+
+    async migratePersonalProject(
+        userId: string,
+        personalProjectId: string,
+        deleteOriginal = false,
+    ) {
+        const personalProject = await this.prisma.project.findUnique({
+            where: { id: personalProjectId },
+            include: { experience: true },
+        });
+
+        if (!personalProject || personalProject.userId !== userId) {
+            throw new NotFoundException(
+                'Personal project not found or access denied',
+            );
+        }
+
+        const businessProfileId =
+            await this.getBusinessProfileId(userId);
+
+        let projectYear = personalProject.createdAt.getFullYear();
+        if (personalProject.experience) {
+            projectYear =
+                personalProject.experience.startDate.getFullYear();
+        }
+
+        return this.prisma.$transaction(async (tx) => {
+            const businessProject = await tx.businessProject.create({
+                data: {
+                    businessProfileId,
+                    title: personalProject.title,
+                    location: null,
+                    year: projectYear,
+                    description: personalProject.description,
+                    projectType:
+                        personalProject.type === 'WORK' ||
+                        personalProject.type === 'FREELANCE'
+                            ? 'COMMERCIAL'
+                            : 'OTHER',
+                    clientName: personalProject.role || null,
+                    thumbnail: personalProject.thumbnail,
+                    images: personalProject.images,
+                    isPublic: personalProject.isPublic,
+                },
+            });
+
+            if (deleteOriginal) {
+                await tx.project.delete({
+                    where: { id: personalProjectId },
+                });
+            }
+
+            return businessProject;
+        });
+    }
 }

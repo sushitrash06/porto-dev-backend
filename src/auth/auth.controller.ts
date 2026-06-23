@@ -10,6 +10,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { RegisterDto } from './dto/register.dto';
 
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
@@ -23,6 +24,12 @@ export class AuthController {
     constructor(
         private readonly authService: AuthService,
     ) { }
+
+    @ApiOperation({ summary: 'Register a new user account' })
+    @Post('register')
+    register(@Body() dto: RegisterDto) {
+        return this.authService.register(dto);
+    }
 
     @ApiOperation({ summary: 'Login user' })
     @Post('login')

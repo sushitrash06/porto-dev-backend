@@ -6,6 +6,7 @@ import {
     Param,
     Patch,
     Post,
+    Query,
     UploadedFile,
     UseGuards,
     UseInterceptors,
@@ -195,6 +196,23 @@ export class BusinessProjectsController {
         return this.businessProjectsService.findOnePublic(
             userId,
             id,
+        );
+    }
+
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Convert a personal project into a business case study' })
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @Post('import-personal/:personalProjectId')
+    migratePersonalProject(
+        @CurrentUser() user: any,
+        @Param('personalProjectId') personalProjectId: string,
+        @Query('deleteOriginal') deleteOriginal?: string,
+    ) {
+        return this.businessProjectsService.migratePersonalProject(
+            user.userId,
+            personalProjectId,
+            deleteOriginal === 'true',
         );
     }
 }
