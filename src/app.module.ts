@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -16,6 +18,8 @@ import { BusinessProjectsModule } from './business-projects/business-projects.mo
 
 @Module({
   imports: [
+    PrometheusModule.register(),
+
     PrismaModule,
     AuthModule,
     ProfilesModule,
@@ -31,4 +35,4 @@ import { BusinessProjectsModule } from './business-projects/business-projects.mo
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}
