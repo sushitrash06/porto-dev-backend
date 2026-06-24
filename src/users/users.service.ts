@@ -42,17 +42,28 @@ export class UsersService {
                 password: hashedPassword,
                 role: dto.role,
 
-                profile: {
-                    create: {
-                        fullName: '',
-                        skills: [],
-                        services: [],
-                    },
-                },
+                ...(dto.role === 'BUSINESS'
+                    ? {
+                        businessProfile: {
+                            create: {
+                                businessName: '',
+                            },
+                        },
+                    }
+                    : {
+                        profile: {
+                            create: {
+                                fullName: '',
+                                skills: [],
+                                services: [],
+                            },
+                        },
+                    }),
             },
 
             include: {
                 profile: true,
+                businessProfile: true,
             },
         });
     }
