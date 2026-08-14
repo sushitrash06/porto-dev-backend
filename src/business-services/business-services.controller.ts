@@ -13,8 +13,6 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { BusinessServicesService } from './business-services.service';
 
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { Roles } from 'src/auth/detectors/roles.decorator';
 import { CurrentUser } from 'src/auth/detectors/create-user.decorator';
 import { CreateBusinessServiceDto } from 'src/auth/dto/create-business-service.dto';
 import { UpdateBusinessServiceDto } from 'src/auth/dto/update-business-service.dto';
@@ -28,8 +26,7 @@ export class BusinessServicesController {
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Create a new business service' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Post()
     create(
         @CurrentUser() user: any,
@@ -43,8 +40,7 @@ export class BusinessServicesController {
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get all business services belonging to the logged-in user' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Get('me')
     findMine(@CurrentUser() user: any) {
         return this.businessServicesService.findMine(
@@ -54,8 +50,7 @@ export class BusinessServicesController {
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get a specific business service detail owned by the logged-in user' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Get('me/:id')
     findOne(
         @CurrentUser() user: any,
@@ -64,14 +59,13 @@ export class BusinessServicesController {
         return this.businessServicesService.findOne(
             user.userId,
             id,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Update an existing business service' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Patch(':id')
     update(
         @CurrentUser() user: any,
@@ -82,14 +76,13 @@ export class BusinessServicesController {
             user.userId,
             id,
             dto,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Delete a business service' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Delete(':id')
     remove(
         @CurrentUser() user: any,
@@ -98,7 +91,7 @@ export class BusinessServicesController {
         return this.businessServicesService.remove(
             user.userId,
             id,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
 

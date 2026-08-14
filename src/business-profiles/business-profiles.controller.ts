@@ -16,8 +16,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { BusinessProfilesService } from './business-profiles.service';
 
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { Roles } from 'src/auth/detectors/roles.decorator';
 import { CurrentUser } from 'src/auth/detectors/create-user.decorator';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { CreateBusinessProfileDto } from 'src/auth/dto/create-business-profile.dto';
@@ -33,8 +31,7 @@ export class BusinessProfilesController {
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get current user business profile' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Get('me')
     me(@CurrentUser() user: any) {
         return this.businessProfilesService.getMyProfile(
@@ -43,15 +40,25 @@ export class BusinessProfilesController {
     }
 
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Create or update current user business profile' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @ApiOperation({ summary: 'Create current user business profile' })
+    @UseGuards(JwtAuthGuard)
+    @Post()
+    createProfile(
+        @CurrentUser() user: any,
+        @Body() dto: CreateBusinessProfileDto,
+    ) {
+        return this.businessProfilesService.createProfile(user.userId, dto);
+    }
+
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Update current user business profile' })
+    @UseGuards(JwtAuthGuard)
     @Patch('me')
     updateMe(
         @CurrentUser() user: any,
         @Body() dto: UpdateBusinessProfileDto,
     ) {
-        return this.businessProfilesService.createOrUpdate(
+        return this.businessProfilesService.updateProfile(
             user.userId,
             dto,
         );
@@ -59,8 +66,7 @@ export class BusinessProfilesController {
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Upload business logo image' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Post('me/logo')
     @UseInterceptors(FileInterceptor('file'))
     async uploadLogo(
@@ -91,8 +97,7 @@ export class BusinessProfilesController {
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Upload business banner image' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Post('me/banner')
     @UseInterceptors(FileInterceptor('file'))
     async uploadBanner(

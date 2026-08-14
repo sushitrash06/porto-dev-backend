@@ -1,8 +1,10 @@
 import {
+    ConflictException,
     ForbiddenException,
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
+import { CreateProfileDto } from 'src/auth/dto/create-profile.dto';
 import { UpdateProfileDto } from 'src/auth/dto/update-profile.dto';
 
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -22,6 +24,23 @@ export class ProfilesService {
         });
     }
 
+    async createProfile(userId: string, dto: CreateProfileDto) {
+        const existingProfile = await this.prisma.profile.findUnique({
+            where: { userId },
+        });
+
+        if (existingProfile) {
+            throw new ConflictException('Personal profile already exists');
+        }
+
+        return this.prisma.profile.create({
+            data: {
+                userId,
+                ...dto,
+            },
+        });
+    }
+
     async updateProfile(
         userId: string,
         dto: UpdateProfileDto,
@@ -34,13 +53,7 @@ export class ProfilesService {
             });
 
         if (!existingProfile) {
-            return this.prisma.profile.create({
-                data: {
-                    userId,
-                    fullName: dto.fullName ?? '',
-                    ...dto,
-                },
-            });
+            throw new NotFoundException('Personal profile not found');
         }
 
         return this.prisma.profile.update({

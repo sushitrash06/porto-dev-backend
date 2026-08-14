@@ -41,29 +41,6 @@ export class UsersService {
                 email: dto.email,
                 password: hashedPassword,
                 role: dto.role,
-
-                ...(dto.role === 'BUSINESS'
-                    ? {
-                        businessProfile: {
-                            create: {
-                                businessName: '',
-                            },
-                        },
-                    }
-                    : {
-                        profile: {
-                            create: {
-                                fullName: '',
-                                skills: [],
-                                services: [],
-                            },
-                        },
-                    }),
-            },
-
-            include: {
-                profile: true,
-                businessProfile: true,
             },
         });
     }

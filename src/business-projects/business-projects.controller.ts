@@ -18,8 +18,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { BusinessProjectsService } from './business-projects.service';
 
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { Roles } from 'src/auth/detectors/roles.decorator';
 import { CurrentUser } from 'src/auth/detectors/create-user.decorator';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { CreateBusinessProjectDto } from 'src/auth/dto/create-business-project.dto';
@@ -35,8 +33,7 @@ export class BusinessProjectsController {
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Create a new business project' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Post()
     create(
         @CurrentUser() user: any,
@@ -50,8 +47,7 @@ export class BusinessProjectsController {
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get all business projects belonging to the logged-in user' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Get('me')
     findMine(@CurrentUser() user: any) {
         return this.businessProjectsService.findMine(
@@ -61,8 +57,7 @@ export class BusinessProjectsController {
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get a specific business project detail owned by the logged-in user' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Get('me/:id')
     findOne(
         @CurrentUser() user: any,
@@ -71,14 +66,13 @@ export class BusinessProjectsController {
         return this.businessProjectsService.findOne(
             user.userId,
             id,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Upload project thumbnail image' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Post(':id/thumbnail')
     @UseInterceptors(FileInterceptor('file'))
     async uploadThumbnail(
@@ -95,14 +89,13 @@ export class BusinessProjectsController {
             user.userId,
             id,
             imageUrl,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Upload a detail image to the business project' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Post(':id/images')
     @UseInterceptors(FileInterceptor('file'))
     async uploadImage(
@@ -119,14 +112,13 @@ export class BusinessProjectsController {
             user.userId,
             id,
             imageUrl,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Remove a detail image from the business project' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Delete(':id/images')
     async removeImage(
         @CurrentUser() user: any,
@@ -141,14 +133,13 @@ export class BusinessProjectsController {
             user.userId,
             id,
             imageUrl,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Update an existing business project' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Patch(':id')
     update(
         @CurrentUser() user: any,
@@ -159,14 +150,13 @@ export class BusinessProjectsController {
             user.userId,
             id,
             dto,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Delete a business project' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Delete(':id')
     remove(
         @CurrentUser() user: any,
@@ -175,7 +165,7 @@ export class BusinessProjectsController {
         return this.businessProjectsService.remove(
             user.userId,
             id,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
 
@@ -201,8 +191,7 @@ export class BusinessProjectsController {
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Convert a personal project into a business case study' })
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('BUSINESS', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard)
     @Post('import-personal/:personalProjectId')
     migratePersonalProject(
         @CurrentUser() user: any,

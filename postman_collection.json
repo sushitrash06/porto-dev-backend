@@ -87,6 +87,55 @@
 					}
 				},
 				{
+					"name": "Verify Email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/verify-email?token=TOKEN_HERE",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"verify-email"
+							],
+							"query": [
+								{
+									"key": "token",
+									"value": "TOKEN_HERE"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Resend Verification",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"newuser@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/resend-verification",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"resend-verification"
+							]
+						}
+					}
+				},
+				{
 					"name": "Login",
 					"event": [
 						{
@@ -147,6 +196,28 @@
 							"path": [
 								"auth",
 								"me"
+							]
+						}
+					}
+				},
+				{
+					"name": "Test Email",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/test-email",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"test-email"
 							]
 						}
 					}
@@ -1274,6 +1345,35 @@
 								"public",
 								"{{userId}}",
 								"{{businessProjectId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Import Personal Project",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/business-projects/import-personal/{{projectId}}?deleteOriginal=false",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"business-projects",
+								"import-personal",
+								"{{projectId}}"
+							],
+							"query": [
+								{
+									"key": "deleteOriginal",
+									"value": "false"
+								}
 							]
 						}
 					}

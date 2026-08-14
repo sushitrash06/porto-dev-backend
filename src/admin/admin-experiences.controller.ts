@@ -16,7 +16,7 @@ import { Roles } from 'src/auth/detectors/roles.decorator';
 @ApiBearerAuth()
 @Controller('admin/experiences')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('SUPER_ADMIN')
+@Roles('ADMIN')
 export class AdminExperiencesController {
     constructor(
         private readonly experiencesService: ExperiencesService,

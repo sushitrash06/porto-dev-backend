@@ -19,6 +19,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { CurrentUser } from 'src/auth/detectors/create-user.decorator';
+import { CreateProfileDto } from 'src/auth/dto/create-profile.dto';
 import { UpdateProfileDto } from 'src/auth/dto/update-profile.dto';
 
 @ApiTags('Profiles')
@@ -28,6 +29,17 @@ export class ProfilesController {
         private readonly profilesService: ProfilesService,
         private readonly cloudinaryService: CloudinaryService,
     ) { }
+
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Create current user personal profile' })
+    @UseGuards(JwtAuthGuard)
+    @Post()
+    createProfile(
+        @CurrentUser() user: any,
+        @Body() dto: CreateProfileDto,
+    ) {
+        return this.profilesService.createProfile(user.userId, dto);
+    }
 
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get current user personal profile' })

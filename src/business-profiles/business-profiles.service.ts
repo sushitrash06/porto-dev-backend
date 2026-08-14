@@ -1,4 +1,5 @@
 import {
+    ConflictException,
     ForbiddenException,
     Injectable,
     NotFoundException,
@@ -22,9 +23,32 @@ export class BusinessProfilesService {
         });
     }
 
-    async createOrUpdate(
+    async createProfile(userId: string, dto: CreateBusinessProfileDto) {
+        const existing = await this.prisma.businessProfile.findUnique({
+            where: { userId },
+        });
+
+        if (existing) {
+            throw new ConflictException('Business profile already exists');
+        }
+
+        return this.prisma.businessProfile.create({
+            data: {
+                userId,
+                businessName: dto.businessName ?? '',
+                description: dto.description,
+                contactEmail: dto.contactEmail,
+                phoneNumber: dto.phoneNumber,
+                location: dto.location,
+                website: dto.website,
+                isPublic: dto.isPublic ?? true,
+            },
+        });
+    }
+
+    async updateProfile(
         userId: string,
-        dto: CreateBusinessProfileDto | UpdateBusinessProfileDto,
+        dto: UpdateBusinessProfileDto,
     ) {
         const existing =
             await this.prisma.businessProfile.findUnique({
@@ -32,19 +56,7 @@ export class BusinessProfilesService {
             });
 
         if (!existing) {
-            return this.prisma.businessProfile.create({
-                data: {
-                    userId,
-                    businessName:
-                        (dto as CreateBusinessProfileDto).businessName ?? '',
-                    description: dto.description,
-                    contactEmail: dto.contactEmail,
-                    phoneNumber: dto.phoneNumber,
-                    location: dto.location,
-                    website: dto.website,
-                    isPublic: dto.isPublic ?? true,
-                },
-            });
+            throw new NotFoundException('Business profile not found');
         }
 
         return this.prisma.businessProfile.update({

@@ -61,7 +61,7 @@ export class ProjectsController {
         return this.projectsService.findOneOwned(
             user.userId,
             id,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
 
@@ -84,7 +84,7 @@ export class ProjectsController {
             user.userId,
             id,
             imageUrl,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
 
@@ -107,7 +107,7 @@ export class ProjectsController {
             user.userId,
             id,
             imageUrl,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
 
@@ -142,7 +142,7 @@ export class ProjectsController {
             user.userId,
             id,
             dto,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
 
@@ -157,7 +157,7 @@ export class ProjectsController {
         return this.projectsService.remove(
             user.userId,
             id,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
 
@@ -181,7 +181,7 @@ export class ProjectsController {
             user.userId,
             id,
             imageUrl,
-            user.role === 'SUPER_ADMIN',
+            user.role === 'ADMIN',
         );
     }
-}
+}

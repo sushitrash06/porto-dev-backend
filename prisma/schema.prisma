@@ -8,9 +8,8 @@ datasource db {
 }
 
 enum Role {
-  SUPER_ADMIN
+  ADMIN
   USER
-  BUSINESS
 }
 
 enum ProjectType {
@@ -32,18 +31,22 @@ enum BusinessProjectType {
 }
 
 model User {
-  id              String           @id @default(uuid())
-  email           String           @unique
-  password        String
-  role            Role             @default(USER)
+  id                       String           @id @default(uuid())
+  email                    String           @unique
+  password                 String
+  role                     Role             @default(USER)
 
-  profile         Profile?
-  businessProfile BusinessProfile?
-  experiences     Experience[]
-  projects        Project[]
+  isEmailVerified          Boolean          @default(false)
+  emailVerificationToken   String?          @unique
+  emailVerificationExpires DateTime?
 
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  profile                  Profile?
+  businessProfile          BusinessProfile?
+  experiences              Experience[]
+  projects                 Project[]
+
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
 }
 
 model Profile {

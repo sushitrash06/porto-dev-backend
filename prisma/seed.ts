@@ -17,7 +17,8 @@ async function main() {
         create: {
             email: 'admin@porto.dev',
             password: hashedPassword,
-            role: Role.SUPER_ADMIN,
+            role: Role.ADMIN,
+            isEmailVerified: true,
         },
     });
 

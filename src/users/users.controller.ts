@@ -34,7 +34,7 @@ export class UsersController {
         JwtAuthGuard,
         RolesGuard,
     )
-    @Roles('SUPER_ADMIN')
+    @Roles('ADMIN')
     @Post()
     create(
         @Body() dto: CreateUserDto,
@@ -47,7 +47,7 @@ export class UsersController {
         JwtAuthGuard,
         RolesGuard,
     )
-    @Roles('SUPER_ADMIN')
+    @Roles('ADMIN')
     @Get()
     findAll(
         @Query('page') page?: string,
@@ -66,7 +66,7 @@ export class UsersController {
         JwtAuthGuard,
         RolesGuard,
     )
-    @Roles('SUPER_ADMIN')
+    @Roles('ADMIN')
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.usersService.findOne(id);
@@ -77,7 +77,7 @@ export class UsersController {
         JwtAuthGuard,
         RolesGuard,
     )
-    @Roles('SUPER_ADMIN')
+    @Roles('ADMIN')
     @Patch(':id')
     update(
         @Param('id') id: string,
@@ -91,7 +91,7 @@ export class UsersController {
         JwtAuthGuard,
         RolesGuard,
     )
-    @Roles('SUPER_ADMIN')
+    @Roles('ADMIN')
     @Delete(':id')
     remove(@Param('id') id: string) {
         return this.usersService.remove(id);
