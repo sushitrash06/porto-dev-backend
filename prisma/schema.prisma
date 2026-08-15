@@ -39,6 +39,7 @@ model User {
   isEmailVerified          Boolean          @default(false)
   emailVerificationToken   String?          @unique
   emailVerificationExpires DateTime?
+  pendingEmail             String?          @unique
 
   profile                  Profile?
   businessProfile          BusinessProfile?

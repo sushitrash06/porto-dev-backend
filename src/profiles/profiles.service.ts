@@ -45,22 +45,16 @@ export class ProfilesService {
         userId: string,
         dto: UpdateProfileDto,
     ) {
-        const existingProfile =
-            await this.prisma.profile.findUnique({
-                where: {
-                    userId,
-                },
-            });
-
-        if (!existingProfile) {
-            throw new NotFoundException('Personal profile not found');
-        }
-
-        return this.prisma.profile.update({
+        return this.prisma.profile.upsert({
             where: {
                 userId,
             },
-            data: dto,
+            update: dto,
+            create: {
+                userId,
+                fullName: dto.fullName ?? 'New User',
+                ...dto,
+            }
         });
     }
 
@@ -68,14 +62,18 @@ export class ProfilesService {
         userId: string,
         imageUrl: string,
     ) {
-        return this.prisma.profile.update({
+        return this.prisma.profile.upsert({
             where: {
                 userId,
             },
-
-            data: {
+            update: {
                 profileImage: imageUrl,
             },
+            create: {
+                userId,
+                fullName: 'New User',
+                profileImage: imageUrl,
+            }
         });
     }
 
@@ -83,14 +81,18 @@ export class ProfilesService {
         userId: string,
         imageUrl: string,
     ) {
-        return this.prisma.profile.update({
+        return this.prisma.profile.upsert({
             where: {
                 userId,
             },
-
-            data: {
+            update: {
                 bannerImage: imageUrl,
             },
+            create: {
+                userId,
+                fullName: 'New User',
+                bannerImage: imageUrl,
+            }
         });
     }
 
@@ -98,14 +100,18 @@ export class ProfilesService {
         userId: string,
         cvUrl: string,
     ) {
-        return this.prisma.profile.update({
+        return this.prisma.profile.upsert({
             where: {
                 userId,
             },
-
-            data: {
+            update: {
                 cvUrl,
             },
+            create: {
+                userId,
+                fullName: 'New User',
+                cvUrl,
+            }
         });
     }
     async getPublicProfile(userId: string) {

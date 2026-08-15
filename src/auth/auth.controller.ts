@@ -12,6 +12,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RequestEmailChangeDto } from './dto/request-email-change.dto';
 
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
@@ -80,6 +81,20 @@ export class AuthController {
         @Body() dto: ChangePasswordDto,
     ) {
         return this.authService.changePassword(
+            user.userId,
+            dto,
+        );
+    }
+
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Request an email change' })
+    @UseGuards(JwtAuthGuard)
+    @Post('request-email-change')
+    requestEmailChange(
+        @CurrentUser() user: any,
+        @Body() dto: RequestEmailChangeDto,
+    ) {
+        return this.authService.requestEmailChange(
             user.userId,
             dto,
         );

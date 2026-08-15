@@ -11,6 +11,7 @@ import { UsersService } from 'src/users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RequestEmailChangeDto } from './dto/request-email-change.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { EmailService } from 'src/email/email.service';
 import { ConfigService } from '@nestjs/config';
@@ -115,9 +116,63 @@ export class AuthService {
 
         const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
         await this.usersService.updatePassword(userId, hashedPassword);
+        
+        await this.emailService.sendPasswordChangeNotification(user.email);
 
         return {
             message: 'Password changed successfully',
+        };
+    }
+
+    async requestEmailChange(userId: string, dto: RequestEmailChangeDto) {
+        const user = await this.usersService.findById(userId);
+
+        if (!user) {
+            throw new UnauthorizedException('User not found');
+        }
+
+        const isPasswordValid = await bcrypt.compare(
+            dto.password,
+            user.password,
+        );
+
+        if (!isPasswordValid) {
+            throw new UnauthorizedException('Invalid password');
+        }
+
+        const existingUser = await this.prisma.user.findFirst({
+            where: {
+                OR: [
+                    { email: dto.newEmail },
+                    { pendingEmail: dto.newEmail }
+                ]
+            }
+        });
+
+        if (existingUser && existingUser.id !== userId) {
+            throw new ConflictException('Email already in use');
+        }
+
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 24);
+
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                pendingEmail: dto.newEmail,
+                emailVerificationToken: verificationToken,
+                emailVerificationExpires: expiresAt,
+            },
+        });
+
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
+        const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}`;
+        
+        await this.emailService.sendVerificationEmail(dto.newEmail, verificationLink);
+
+        return {
+            message: 'Verification link sent to your new email. Please check your inbox.',
         };
     }
 
@@ -156,13 +211,20 @@ export class AuthService {
             throw new UnauthorizedException('Verification token has expired');
         }
 
+        const data: any = {
+            isEmailVerified: true,
+            emailVerificationToken: null,
+            emailVerificationExpires: null,
+        };
+
+        if (user.pendingEmail) {
+            data.email = user.pendingEmail;
+            data.pendingEmail = null;
+        }
+
         await this.prisma.user.update({
             where: { id: user.id },
-            data: {
-                isEmailVerified: true,
-                emailVerificationToken: null,
-                emailVerificationExpires: null,
-            },
+            data,
         });
 
         return { message: 'Email successfully verified. You can now login.' };

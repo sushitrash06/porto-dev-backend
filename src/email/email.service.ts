@@ -91,4 +91,44 @@ export class EmailService {
       );
     }
   }
+
+  async sendPasswordChangeNotification(to: string): Promise<void> {
+    try {
+      await this.mailerService.sendMail({
+        to,
+        subject: 'Security Alert: Password Changed - Porto Dev',
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 20px; color: #111827;">
+            <div style="text-align: center; padding: 20px 0;">
+              <h1 style="font-size: 24px; font-weight: 800; margin: 0; letter-spacing: 1px;">
+                <span style="font-size: 22px;">⬢</span> PORTO
+              </h1>
+            </div>
+            <div style="background-color: #ffffff; padding: 40px 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); text-align: center;">
+              <div style="background-color: #fee2e2; width: 64px; height: 64px; border-radius: 50%; display: inline-block; line-height: 64px; margin-bottom: 20px; font-size: 24px;">🔒</div>
+              <h2 style="font-size: 24px; font-weight: 700; margin: 0 0 16px 0; color: #111;">Password Changed</h2>
+              <p style="font-size: 15px; color: #4b5563; margin: 0 0 24px 0; line-height: 1.5;">
+                This is a confirmation that the password for your Porto account has just been changed.
+              </p>
+              <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; text-align: left; margin-top: 24px;">
+                <h3 style="font-size: 14px; font-weight: 600; color: #991b1b; margin: 0 0 8px 0;">Didn't make this change?</h3>
+                <p style="font-size: 13px; color: #b91c1c; margin: 0; line-height: 1.5;">
+                  If you did not authorize this change, please contact support immediately to secure your account.
+                </p>
+              </div>
+            </div>
+            <div style="text-align: center; padding: 40px 0 20px 0;">
+              <p style="color: #a88a6d; font-size: 13px; font-weight: 500; margin: 0 0 8px 0;">Build your portfolio. Own your story.</p>
+              <p style="color: #9ca3af; font-size: 12px; margin: 0;">&copy; 2026 Porto. All rights reserved.</p>
+            </div>
+          </div>
+        `,
+      });
+      this.logger.log(`Password change notification sent successfully to ${to}`);
+    } catch (error) {
+      this.logger.error(`Failed to send password change notification to ${to}`, error.stack);
+      // We don't throw an error here because the password was already successfully changed.
+      // We just log the failure of the notification email.
+    }
+  }
 }

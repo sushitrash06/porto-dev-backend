@@ -50,32 +50,38 @@ export class BusinessProfilesService {
         userId: string,
         dto: UpdateBusinessProfileDto,
     ) {
-        const existing =
-            await this.prisma.businessProfile.findUnique({
-                where: { userId },
-            });
-
-        if (!existing) {
-            throw new NotFoundException('Business profile not found');
-        }
-
-        return this.prisma.businessProfile.update({
+        return this.prisma.businessProfile.upsert({
             where: { userId },
-            data: dto,
+            update: dto,
+            create: {
+                userId,
+                businessName: dto.businessName ?? 'New Business',
+                ...dto,
+            }
         });
     }
 
     async updateLogo(userId: string, imageUrl: string) {
-        return this.prisma.businessProfile.update({
+        return this.prisma.businessProfile.upsert({
             where: { userId },
-            data: { logo: imageUrl },
+            update: { logo: imageUrl },
+            create: {
+                userId,
+                businessName: 'New Business',
+                logo: imageUrl,
+            }
         });
     }
 
     async updateBanner(userId: string, imageUrl: string) {
-        return this.prisma.businessProfile.update({
+        return this.prisma.businessProfile.upsert({
             where: { userId },
-            data: { bannerImage: imageUrl },
+            update: { bannerImage: imageUrl },
+            create: {
+                userId,
+                businessName: 'New Business',
+                bannerImage: imageUrl,
+            }
         });
     }
 
