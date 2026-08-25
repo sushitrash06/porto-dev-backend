@@ -20,6 +20,7 @@ export class UsersService {
     findByEmail(email: string) {
         return this.prisma.user.findUnique({
             where: { email },
+            include: { businessProfile: true }
         });
     }
 

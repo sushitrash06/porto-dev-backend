@@ -89,6 +89,7 @@ export class AuthService {
             sub: user.id,
             email: user.email,
             role: user.role,
+            hasBusinessProfile: !!user.businessProfile,
         };
 
         return {
