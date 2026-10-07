@@ -96,4 +96,15 @@ export class UsersController {
     remove(@Param('id') id: string) {
         return this.usersService.remove(id);
     }
+
+    @ApiOperation({ summary: 'Resend verification email to user (Admin only)' })
+    @UseGuards(
+        JwtAuthGuard,
+        RolesGuard,
+    )
+    @Roles('ADMIN')
+    @Post(':id/resend-verification')
+    resendVerification(@Param('id') id: string) {
+        return this.usersService.resendVerification(id);
+    }
 }

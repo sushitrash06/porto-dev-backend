@@ -2,19 +2,25 @@ import {
     Injectable,
     ConflictException,
     NotFoundException,
+    BadRequestException,
 } from '@nestjs/common';
 
 import { PrismaService } from 'src/prisma/prisma.service';
 
 
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
 import { UpdateUserDto } from 'src/auth/dto/update-user.dto';
+import { EmailService } from 'src/email/email.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UsersService {
     constructor(
         private prisma: PrismaService,
+        private emailService: EmailService,
+        private configService: ConfigService,
     ) { }
 
     findByEmail(email: string) {
@@ -73,6 +79,7 @@ export class UsersService {
                     id: true,
                     email: true,
                     role: true,
+                    isEmailVerified: true,
                     createdAt: true,
                     profile: {
                         select: {
@@ -120,6 +127,7 @@ export class UsersService {
                 id: true,
                 email: true,
                 role: true,
+                isEmailVerified: true,
                 createdAt: true,
                 profile: true,
             },
@@ -189,5 +197,38 @@ export class UsersService {
                 email: true,
             },
         });
+    }
+
+    async resendVerification(id: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        if (user.isEmailVerified) {
+            throw new BadRequestException('User email is already verified');
+        }
+
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 24);
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                emailVerificationToken: verificationToken,
+                emailVerificationExpires: expiresAt,
+            },
+        });
+
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
+        const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}`;
+
+        await this.emailService.sendVerificationEmail(user.email, verificationLink);
+
+        return { message: 'Verification email sent successfully' };
     }
 }
