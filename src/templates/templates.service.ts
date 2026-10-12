@@ -6,11 +6,11 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { TemplateCategory } from '@prisma/client';
+import { Prisma, TemplateCategory } from '@prisma/client';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
 import { UpdateUserThemeDto } from './dto/update-user-theme.dto';
-import { LayoutConfig, UserCustomConfig } from './interfaces/layout-config.interface';
+import { LayoutConfig, SectionBlock, UserCustomConfig } from './interfaces/layout-config.interface';
 
 @Injectable()
 export class TemplatesService {
@@ -312,9 +312,39 @@ export class TemplatesService {
     });
   }
 
+  async getMyTheme(userId: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      include: {
+        template: true,
+      },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('User profile not found. Please create a profile first.');
+    }
+
+    let template = profile.template;
+    if (!template) {
+      template = await this.prisma.template.findFirst({
+        where: { isDefault: true, isPublished: true },
+      });
+    }
+
+    const baseConfig = template?.layoutConfig;
+    const resolvedLayout = this.resolveLayout(baseConfig, profile.userCustomConfig);
+
+    return {
+      template,
+      userCustomConfig: profile.userCustomConfig,
+      resolvedLayout,
+    };
+  }
+
   async updateUserCustomConfig(userId: string, dto: UpdateUserThemeDto) {
     const profile = await this.prisma.profile.findUnique({
       where: { userId },
+      include: { template: true },
     });
 
     if (!profile) {
@@ -330,12 +360,119 @@ export class TemplatesService {
       sections: dto.sections ?? existingConfig.sections,
     };
 
-    return this.prisma.profile.update({
+    const updatedProfile = await this.prisma.profile.update({
+      where: { userId },
+      data: {
+        userCustomConfig: updatedConfig as any,
+      },
+      include: { template: true },
+    });
+
+    let template = updatedProfile.template;
+    if (!template) {
+      template = await this.prisma.template.findFirst({
+        where: { isDefault: true, isPublished: true },
+      });
+    }
+
+    const resolvedLayout = this.resolveLayout(template?.layoutConfig, updatedConfig);
+
+    return {
+      profile: updatedProfile,
+      userCustomConfig: updatedConfig,
+      resolvedLayout,
+    };
+  }
+
+  async reorderMySections(userId: string, sectionIds: string[]) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      include: { template: true },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    let template = profile.template;
+    if (!template) {
+      template = await this.prisma.template.findFirst({
+        where: { isDefault: true, isPublished: true },
+      });
+    }
+
+    const baseLayout = (template?.layoutConfig as any) || {};
+    const baseSections: any[] = baseLayout.sections || [];
+    const existingConfig = (profile.userCustomConfig as UserCustomConfig) || {};
+    const existingSections = existingConfig.sections || [];
+
+    const existingMap = new Map(existingSections.map((s) => [s.id, s]));
+    const baseMap = new Map(baseSections.map((s) => [s.id, s]));
+
+    const orderedSections = sectionIds.map((id) => {
+      const override = existingMap.get(id);
+      const baseSec = baseMap.get(id);
+      return {
+        id,
+        isVisible: override?.isVisible !== undefined ? override.isVisible : (baseSec?.isVisible ?? true),
+        props: {
+          ...(baseSec?.props || {}),
+          ...(override?.props || {}),
+        },
+      };
+    });
+
+    const updatedConfig: UserCustomConfig = {
+      ...existingConfig,
+      sections: orderedSections,
+    };
+
+    const updatedProfile = await this.prisma.profile.update({
       where: { userId },
       data: {
         userCustomConfig: updatedConfig as any,
       },
     });
+
+    const resolvedLayout = this.resolveLayout(baseLayout, updatedConfig);
+
+    return {
+      message: 'Sections reordered successfully',
+      userCustomConfig: updatedConfig,
+      resolvedLayout,
+    };
+  }
+
+  async resetUserCustomConfig(userId: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      include: { template: true },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    await this.prisma.profile.update({
+      where: { userId },
+      data: {
+        userCustomConfig: Prisma.DbNull,
+      },
+    });
+
+    let template = profile.template;
+    if (!template) {
+      template = await this.prisma.template.findFirst({
+        where: { isDefault: true, isPublished: true },
+      });
+    }
+
+    const resolvedLayout = this.resolveLayout(template?.layoutConfig, null);
+
+    return {
+      message: 'Theme customization reset to template default',
+      resolvedLayout,
+    };
   }
 
   // ─── RESOLUTION ENGINE ──────────────────────────────────────────────────────
@@ -397,27 +534,56 @@ export class TemplatesService {
       ...(userOverride.theme || {}),
     };
 
-    const resolvedSections = (base.sections || []).map((section) => {
-      const overrideSection = (userOverride.sections || []).find(
-        (s: any) => s.id === section.id,
+    let resolvedSections: SectionBlock[] = [];
+
+    if (
+      userOverride.sections &&
+      Array.isArray(userOverride.sections) &&
+      userOverride.sections.length > 0
+    ) {
+      const baseSectionsMap = new Map(
+        (base.sections || []).map((s) => [s.id, s]),
       );
 
-      if (!overrideSection) {
-        return section;
+      for (const overrideSection of userOverride.sections) {
+        const baseSection = baseSectionsMap.get(overrideSection.id);
+        if (baseSection) {
+          resolvedSections.push({
+            ...baseSection,
+            title: overrideSection.title ?? baseSection.title,
+            variant: overrideSection.variant ?? baseSection.variant,
+            isVisible:
+              overrideSection.isVisible !== undefined
+                ? overrideSection.isVisible
+                : baseSection.isVisible,
+            props: {
+              ...(baseSection.props || {}),
+              ...(overrideSection.props || {}),
+            },
+          });
+          baseSectionsMap.delete(overrideSection.id);
+        } else {
+          resolvedSections.push({
+            id: overrideSection.id,
+            type: overrideSection.type || 'CUSTOM_SECTION',
+            title: overrideSection.title,
+            variant: overrideSection.variant,
+            isVisible:
+              overrideSection.isVisible !== undefined
+                ? overrideSection.isVisible
+                : true,
+            props: overrideSection.props || {},
+          });
+        }
       }
 
-      return {
-        ...section,
-        isVisible:
-          overrideSection.isVisible !== undefined
-            ? overrideSection.isVisible
-            : section.isVisible,
-        props: {
-          ...(section.props || {}),
-          ...(overrideSection.props || {}),
-        },
-      };
-    });
+      // Sisa base section yang belum ada di override (agar tidak hilang)
+      for (const remainingBaseSection of baseSectionsMap.values()) {
+        resolvedSections.push(remainingBaseSection);
+      }
+    } else {
+      resolvedSections = base.sections || [];
+    }
 
     return {
       theme: resolvedTheme,

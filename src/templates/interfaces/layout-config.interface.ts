@@ -37,6 +37,9 @@ export interface UserCustomConfig {
   theme?: Partial<ThemeTokens>;
   sections?: Array<{
     id: string;
+    type?: string;
+    title?: string;
+    variant?: string;
     isVisible?: boolean;
     props?: Record<string, any>;
   }>;
