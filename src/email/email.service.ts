@@ -131,4 +131,70 @@ export class EmailService {
       // We just log the failure of the notification email.
     }
   }
+
+  async sendPasswordResetEmail(to: string, resetLink: string): Promise<void> {
+    try {
+      await this.mailerService.sendMail({
+        to,
+        subject: 'Reset your password - Porto Dev',
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 20px; color: #111827;">
+            <div style="text-align: center; padding: 20px 0;">
+              <h1 style="font-size: 24px; font-weight: 800; margin: 0; letter-spacing: 1px;">
+                <span style="font-size: 22px;">⬢</span> PORTO
+              </h1>
+            </div>
+            <div style="background-color: #f4efe9; padding: 40px 30px; border-radius: 12px 12px 0 0;">
+              <p style="color: #a88a6d; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin: 0 0 10px 0;">Account Security</p>
+              <h2 style="font-family: Georgia, serif; font-size: 38px; font-weight: normal; margin: 0 0 20px 0; color: #111;">Reset your<br>password</h2>
+              <p style="font-size: 15px; line-height: 1.6; color: #374151; margin: 0;">
+                We received a request to reset your password.<br>
+                Click the button below to set up a new password<br>
+                and regain access to your account.
+              </p>
+            </div>
+            <div style="background-color: #ffffff; padding: 40px 30px; border-radius: 12px; margin-top: -15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); text-align: center;">
+              <div style="background-color: #f4efe9; width: 64px; height: 64px; border-radius: 50%; display: inline-block; line-height: 64px; margin-bottom: 20px; font-size: 24px;">🔑</div>
+              <p style="font-size: 15px; color: #4b5563; margin: 0 0 24px 0; line-height: 1.5;">
+                This link will securely allow you to create a new password.
+              </p>
+              <a href="${resetLink}" style="background-color: #111827; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">
+                Reset Password &nbsp;&rarr;
+              </a>
+              <p style="font-size: 13px; color: #9ca3af; margin: 24px 0 0 0;">
+                <span style="vertical-align: middle;">⏱️</span> This reset link will expire in 15 minutes.
+              </p>
+            </div>
+            <div style="background-color: #ffffff; border-radius: 12px; margin-top: 16px; border: 1px solid #f3f4f6; padding: 24px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td width="50" valign="top">
+                    <div style="background-color: #fef2f2; width: 40px; height: 40px; border-radius: 50%; display: inline-block; text-align: center; line-height: 40px;">
+                      <span style="font-size: 18px; color: #dc2626;">🛡️</span>
+                    </div>
+                  </td>
+                  <td valign="top" style="padding-left: 16px;">
+                    <h3 style="font-size: 15px; font-weight: 600; margin: 0 0 4px 0; color: #111827;">Didn't request a password reset?</h3>
+                    <p style="font-size: 14px; margin: 0; color: #6b7280; line-height: 1.5;">
+                      If you didn't ask to reset your password, you can safely ignore this email. Your account remains secure.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div style="text-align: center; padding: 40px 0 20px 0;">
+              <p style="color: #a88a6d; font-size: 13px; font-weight: 500; margin: 0 0 8px 0;">Build your portfolio. Own your story.</p>
+              <p style="color: #9ca3af; font-size: 12px; margin: 0;">&copy; 2026 Porto. All rights reserved.</p>
+            </div>
+          </div>
+        `,
+      });
+      this.logger.log(`Password reset email sent successfully to ${to}`);
+    } catch (error) {
+      this.logger.error(`Failed to send password reset email to ${to}`, error.stack);
+      throw new InternalServerErrorException(
+        `Failed to send password reset email. Error: ${error.message || 'Unknown error'}`
+      );
+    }
+  }
 }

@@ -2,6 +2,7 @@ import {
     Injectable,
     UnauthorizedException,
     ConflictException,
+    BadRequestException,
 } from '@nestjs/common';
 
 import { JwtService } from '@nestjs/jwt';
@@ -12,6 +13,8 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RequestEmailChangeDto } from './dto/request-email-change.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { EmailService } from 'src/email/email.service';
 import { ConfigService } from '@nestjs/config';
@@ -261,5 +264,67 @@ export class AuthService {
         await this.emailService.sendVerificationEmail(user.email, verificationLink);
 
         return { message: 'If the email is registered, a new verification link will be sent.' };
+    }
+
+    async forgotPassword(dto: ForgotPasswordDto) {
+        const user = await this.usersService.findByEmail(dto.email);
+
+        if (!user) {
+            return {
+                message: 'If the email is registered, a password reset link has been sent.',
+            };
+        }
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date();
+        expiresAt.setMinutes(expiresAt.getMinutes() + 15); // 15 minutes expiry
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                passwordResetToken: resetToken,
+                passwordResetExpires: expiresAt,
+            },
+        });
+
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
+        const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+        await this.emailService.sendPasswordResetEmail(user.email, resetLink);
+
+        return {
+            message: 'If the email is registered, a password reset link has been sent.',
+        };
+    }
+
+    async resetPassword(dto: ResetPasswordDto) {
+        const user = await this.prisma.user.findUnique({
+            where: { passwordResetToken: dto.token },
+        });
+
+        if (!user) {
+            throw new BadRequestException('Invalid or expired password reset token.');
+        }
+
+        if (user.passwordResetExpires && user.passwordResetExpires < new Date()) {
+            throw new BadRequestException('Password reset token has expired. Please request a new one.');
+        }
+
+        const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                password: hashedPassword,
+                passwordResetToken: null,
+                passwordResetExpires: null,
+            },
+        });
+
+        await this.emailService.sendPasswordChangeNotification(user.email);
+
+        return {
+            message: 'Password has been reset successfully. You can now login with your new password.',
+        };
     }
 }
