@@ -6,17 +6,23 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from 'src/prisma/prisma.service';
+import { TemplatesService } from 'src/templates/templates.service';
+import { TemplateCategory } from '@prisma/client';
 import { CreateBusinessProfileDto } from 'src/auth/dto/create-business-profile.dto';
 import { UpdateBusinessProfileDto } from 'src/auth/dto/update-business-profile.dto';
 
 @Injectable()
 export class BusinessProfilesService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private templatesService: TemplatesService,
+    ) { }
 
     async getMyProfile(userId: string) {
-        return this.prisma.businessProfile.findUnique({
+        return (this.prisma as any).businessProfile.findUnique({
             where: { userId },
             include: {
+                template: true,
                 services: true,
                 projects: true,
             },
@@ -86,13 +92,14 @@ export class BusinessProfilesService {
     }
 
     async getPublicProfile(userId: string) {
-        const profile =
-            await this.prisma.businessProfile.findFirst({
+        const profile: any =
+            await (this.prisma as any).businessProfile.findFirst({
                 where: {
                     userId,
                     isPublic: true,
                 },
                 include: {
+                    template: true,
                     services: {
                         where: { isPublic: true },
                         orderBy: { createdAt: 'desc' },
@@ -110,6 +117,31 @@ export class BusinessProfilesService {
             );
         }
 
-        return profile;
+        let baseLayoutConfig = profile.template?.layoutConfig;
+        if (!baseLayoutConfig) {
+            const defaultTemplate =
+                (await this.prisma.template.findFirst({
+                    where: {
+                        isDefault: true,
+                        isPublished: true,
+                        category: TemplateCategory.BUSINESS,
+                    },
+                })) ||
+                (await this.prisma.template.findFirst({
+                    where: { isDefault: true, isPublished: true },
+                }));
+            baseLayoutConfig = defaultTemplate?.layoutConfig;
+        }
+
+        const layout = this.templatesService.resolveLayout(
+            baseLayoutConfig,
+            profile.userCustomConfig,
+            TemplateCategory.BUSINESS,
+        );
+
+        return {
+            ...profile,
+            layout,
+        };
     }
 }

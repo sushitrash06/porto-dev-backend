@@ -475,13 +475,269 @@ export class TemplatesService {
     };
   }
 
+  // ─── BUSINESS PROFILE THEME METHODS ─────────────────────────────────────────
+
+  async applyTemplateToBusinessProfile(userId: string, templateIdOrSlug: string) {
+    const template = await this.prisma.template.findFirst({
+      where: {
+        isPublished: true,
+        OR: [{ id: templateIdOrSlug }, { slug: templateIdOrSlug }],
+      },
+    });
+
+    if (!template) {
+      throw new NotFoundException('Selected template not found or not published');
+    }
+
+    const profile = await (this.prisma as any).businessProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Business profile not found. Please create a business profile first.');
+    }
+
+    return (this.prisma as any).businessProfile.update({
+      where: { userId },
+      data: {
+        templateId: template.id,
+      },
+      include: {
+        template: true,
+      },
+    });
+  }
+
+  async getMyBusinessTheme(userId: string) {
+    const profile: any = await (this.prisma as any).businessProfile.findUnique({
+      where: { userId },
+      include: {
+        template: true,
+      },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Business profile not found. Please create a business profile first.');
+    }
+
+    let template = profile.template;
+    if (!template) {
+      template = await this.prisma.template.findFirst({
+        where: {
+          isDefault: true,
+          isPublished: true,
+          category: TemplateCategory.BUSINESS,
+        },
+      });
+
+      if (!template) {
+        template = await this.prisma.template.findFirst({
+          where: { isDefault: true, isPublished: true },
+        });
+      }
+    }
+
+    const baseConfig = template?.layoutConfig;
+    const resolvedLayout = this.resolveLayout(
+      baseConfig,
+      profile.userCustomConfig,
+      TemplateCategory.BUSINESS,
+    );
+
+    return {
+      template,
+      userCustomConfig: profile.userCustomConfig,
+      resolvedLayout,
+    };
+  }
+
+  async updateBusinessCustomConfig(userId: string, dto: UpdateUserThemeDto) {
+    const profile: any = await (this.prisma as any).businessProfile.findUnique({
+      where: { userId },
+      include: { template: true },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Business profile not found');
+    }
+
+    const existingConfig = (profile.userCustomConfig as UserCustomConfig) || {};
+    const updatedConfig: UserCustomConfig = {
+      theme: {
+        ...(existingConfig.theme || {}),
+        ...(dto.theme || {}),
+      },
+      sections: dto.sections ?? existingConfig.sections,
+    };
+
+    const updatedProfile: any = await (this.prisma as any).businessProfile.update({
+      where: { userId },
+      data: {
+        userCustomConfig: updatedConfig as any,
+      },
+      include: { template: true },
+    });
+
+    let template = updatedProfile.template;
+    if (!template) {
+      template = await this.prisma.template.findFirst({
+        where: {
+          isDefault: true,
+          isPublished: true,
+          category: TemplateCategory.BUSINESS,
+        },
+      });
+
+      if (!template) {
+        template = await this.prisma.template.findFirst({
+          where: { isDefault: true, isPublished: true },
+        });
+      }
+    }
+
+    const resolvedLayout = this.resolveLayout(
+      template?.layoutConfig,
+      updatedConfig,
+      TemplateCategory.BUSINESS,
+    );
+
+    return {
+      businessProfile: updatedProfile,
+      userCustomConfig: updatedConfig,
+      resolvedLayout,
+    };
+  }
+
+  async reorderMyBusinessSections(userId: string, sectionIds: string[]) {
+    const profile: any = await (this.prisma as any).businessProfile.findUnique({
+      where: { userId },
+      include: { template: true },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Business profile not found');
+    }
+
+    let template = profile.template;
+    if (!template) {
+      template = await this.prisma.template.findFirst({
+        where: {
+          isDefault: true,
+          isPublished: true,
+          category: TemplateCategory.BUSINESS,
+        },
+      });
+
+      if (!template) {
+        template = await this.prisma.template.findFirst({
+          where: { isDefault: true, isPublished: true },
+        });
+      }
+    }
+
+    const baseLayout = (template?.layoutConfig as any) || {};
+    const baseSections: any[] = baseLayout.sections || [];
+    const existingConfig = (profile.userCustomConfig as UserCustomConfig) || {};
+    const existingSections = existingConfig.sections || [];
+
+    const existingMap = new Map(existingSections.map((s) => [s.id, s]));
+    const baseMap = new Map(baseSections.map((s) => [s.id, s]));
+
+    const orderedSections = sectionIds.map((id) => {
+      const override = existingMap.get(id);
+      const baseSec = baseMap.get(id);
+      return {
+        id,
+        isVisible: override?.isVisible !== undefined ? override.isVisible : (baseSec?.isVisible ?? true),
+        props: {
+          ...(baseSec?.props || {}),
+          ...(override?.props || {}),
+        },
+      };
+    });
+
+    const updatedConfig: UserCustomConfig = {
+      ...existingConfig,
+      sections: orderedSections,
+    };
+
+    const updatedProfile = await (this.prisma as any).businessProfile.update({
+      where: { userId },
+      data: {
+        userCustomConfig: updatedConfig as any,
+      },
+    });
+
+    const resolvedLayout = this.resolveLayout(
+      baseLayout,
+      updatedConfig,
+      TemplateCategory.BUSINESS,
+    );
+
+    return {
+      message: 'Business sections reordered successfully',
+      userCustomConfig: updatedConfig,
+      resolvedLayout,
+    };
+  }
+
+  async resetBusinessCustomConfig(userId: string) {
+    const profile: any = await (this.prisma as any).businessProfile.findUnique({
+      where: { userId },
+      include: { template: true },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Business profile not found');
+    }
+
+    await (this.prisma as any).businessProfile.update({
+      where: { userId },
+      data: {
+        userCustomConfig: Prisma.DbNull,
+      },
+    });
+
+    let template = profile.template;
+    if (!template) {
+      template = await this.prisma.template.findFirst({
+        where: {
+          isDefault: true,
+          isPublished: true,
+          category: TemplateCategory.BUSINESS,
+        },
+      });
+
+      if (!template) {
+        template = await this.prisma.template.findFirst({
+          where: { isDefault: true, isPublished: true },
+        });
+      }
+    }
+
+    const resolvedLayout = this.resolveLayout(
+      template?.layoutConfig,
+      null,
+      TemplateCategory.BUSINESS,
+    );
+
+    return {
+      message: 'Business theme customization reset to template default',
+      resolvedLayout,
+    };
+  }
+
   // ─── RESOLUTION ENGINE ──────────────────────────────────────────────────────
 
   /**
    * Menggabungkan base template layout dengan kustomisasi pribadi user
    */
-  resolveLayout(baseConfig?: any, userOverride?: any): LayoutConfig {
-    const fallbackBase: LayoutConfig = {
+  resolveLayout(
+    baseConfig?: any,
+    userOverride?: any,
+    category: TemplateCategory = TemplateCategory.DEVELOPER,
+  ): LayoutConfig {
+    const fallbackDeveloper: LayoutConfig = {
       theme: {
         fontFamily: 'Inter',
         primaryColor: '#3B82F6',
@@ -522,6 +778,60 @@ export class TemplatesService {
         },
       ],
     };
+
+    const fallbackBusiness: LayoutConfig = {
+      theme: {
+        fontFamily: 'Inter',
+        primaryColor: '#2563EB',
+        backgroundColor: '#0F172A',
+        surfaceColor: '#1E293B',
+        textColor: '#F8FAFC',
+        borderRadius: '12px',
+        darkMode: true,
+      },
+      sections: [
+        {
+          id: 'hero-business-default',
+          type: 'HERO_PROFILE',
+          variant: 'BUSINESS_HERO',
+          isVisible: true,
+          props: { showBanner: true, showLogo: true },
+        },
+        {
+          id: 'about-business-default',
+          type: 'ABOUT_ME',
+          variant: 'COMPANY_OVERVIEW',
+          isVisible: true,
+          props: {},
+        },
+        {
+          id: 'services-business-default',
+          type: 'SERVICES_GRID',
+          variant: 'CARD_GRID_3COL',
+          isVisible: true,
+          props: { showPricing: true },
+        },
+        {
+          id: 'projects-business-default',
+          type: 'PROJECT_LIST',
+          variant: 'PORTFOLIO_SHOWCASE',
+          isVisible: true,
+          props: { limit: 6 },
+        },
+        {
+          id: 'contact-business-default',
+          type: 'CONTACT_SECTION',
+          variant: 'BUSINESS_CONTACT_CARD',
+          isVisible: true,
+          props: {},
+        },
+      ],
+    };
+
+    const fallbackBase =
+      category === TemplateCategory.BUSINESS
+        ? fallbackBusiness
+        : fallbackDeveloper;
 
     const base: LayoutConfig = baseConfig || fallbackBase;
 

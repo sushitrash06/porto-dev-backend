@@ -85,6 +85,57 @@ export class TemplatesController {
     return this.templatesService.resetUserCustomConfig(user.userId);
   }
 
+  // ─── BUSINESS PROFILE THEME ENDPOINTS ───────────────────────────────────────
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user business active template, custom config, and resolved layout' })
+  @UseGuards(JwtAuthGuard)
+  @Get('business/me')
+  getMyBusinessTheme(@CurrentUser() user: any) {
+    return this.templatesService.getMyBusinessTheme(user.userId);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Apply selected template to current user business profile' })
+  @UseGuards(JwtAuthGuard)
+  @Patch('business/me/apply')
+  applyBusinessTemplate(
+    @CurrentUser() user: any,
+    @Body() dto: ApplyTemplateDto,
+  ) {
+    return this.templatesService.applyTemplateToBusinessProfile(user.userId, dto.templateId);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update custom theme overrides (colors, visibility) for current user business profile' })
+  @UseGuards(JwtAuthGuard)
+  @Patch('business/me/theme-config')
+  updateBusinessCustomTheme(
+    @CurrentUser() user: any,
+    @Body() dto: UpdateUserThemeDto,
+  ) {
+    return this.templatesService.updateBusinessCustomConfig(user.userId, dto);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reorder sections for current user business portfolio (Drag & Drop)' })
+  @UseGuards(JwtAuthGuard)
+  @Patch('business/me/reorder-sections')
+  reorderBusinessSections(
+    @CurrentUser() user: any,
+    @Body() dto: ReorderSectionsDto,
+  ) {
+    return this.templatesService.reorderMyBusinessSections(user.userId, dto.sectionIds);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reset current user business customizations back to base template defaults' })
+  @UseGuards(JwtAuthGuard)
+  @Post('business/me/reset')
+  resetBusinessCustomTheme(@CurrentUser() user: any) {
+    return this.templatesService.resetBusinessCustomConfig(user.userId);
+  }
+
   @ApiOperation({ summary: 'Get preview detail of a published template by id or slug' })
   @Get(':id')
   findOnePublished(@Param('id') id: string) {
