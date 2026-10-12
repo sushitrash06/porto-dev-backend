@@ -45,6 +45,7 @@ model User {
   businessProfile          BusinessProfile?
   experiences              Experience[]
   projects                 Project[]
+  createdTemplates         Template[]       @relation("TemplateCreator")
 
   createdAt                DateTime         @default(now())
   updatedAt                DateTime         @updatedAt
@@ -72,6 +73,10 @@ model Profile {
   location     String?
 
   isPublic    Boolean   @default(true)
+
+  templateId       String?
+  template         Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  userCustomConfig Json?
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -200,4 +205,41 @@ model BusinessProject {
 
   @@index([businessProfileId])
   @@index([isPublic])
+}
+
+// ─── Template Models ──────────────────────────────────────────────────────────
+
+enum TemplateCategory {
+  DEVELOPER
+  DESIGNER
+  BUSINESS
+  CREATIVE
+  MINIMAL
+  OTHER
+}
+
+model Template {
+  id             String           @id @default(uuid())
+  slug           String           @unique
+  name           String
+  description    String?          @db.Text
+  thumbnail      String?
+  category       TemplateCategory @default(DEVELOPER)
+
+  isPublished    Boolean          @default(false)
+  isDefault      Boolean          @default(false)
+  version        Int              @default(1)
+
+  layoutConfig   Json
+
+  createdById    String?
+  createdByUser  User?            @relation("TemplateCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  profiles       Profile[]
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([isPublished, category])
+  @@index([slug])
 }

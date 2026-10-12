@@ -17,6 +17,7 @@ import { BusinessProfilesModule } from './business-profiles/business-profiles.mo
 import { BusinessServicesModule } from './business-services/business-services.module';
 import { BusinessProjectsModule } from './business-projects/business-projects.module';
 import { EmailModule } from './email/email.module';
+import { TemplatesModule } from './templates/templates.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { EmailModule } from './email/email.module';
     BusinessProfilesModule,
     BusinessServicesModule,
     BusinessProjectsModule,
+    TemplatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

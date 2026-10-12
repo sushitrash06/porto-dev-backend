@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { TemplatesService } from 'src/templates/templates.service';
 
 @Injectable()
 export class PortfolioService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private templatesService: TemplatesService,
+    ) { }
 
     async getPublicPortfolio(userId: string) {
         const profile = await this.prisma.profile.findFirst({
@@ -11,11 +15,28 @@ export class PortfolioService {
                 userId,
                 isPublic: true,
             },
+            include: {
+                template: true,
+            },
         });
 
         if (!profile) {
             throw new NotFoundException('Portfolio not found');
         }
+
+        let baseLayoutConfig = profile.template?.layoutConfig;
+
+        if (!baseLayoutConfig) {
+            const defaultTemplate = await this.prisma.template.findFirst({
+                where: { isDefault: true, isPublished: true },
+            });
+            baseLayoutConfig = defaultTemplate?.layoutConfig;
+        }
+
+        const layout = this.templatesService.resolveLayout(
+            baseLayoutConfig,
+            profile.userCustomConfig,
+        );
 
         const experiences = await this.prisma.experience.findMany({
             where: {
@@ -54,6 +75,7 @@ export class PortfolioService {
             profile,
             experiences,
             projects,
+            layout,
         };
     }
 }
