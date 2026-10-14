@@ -49,6 +49,7 @@ model User {
   experiences              Experience[]
   projects                 Project[]
   createdTemplates         Template[]       @relation("TemplateCreator")
+  analyticsEvents          AnalyticsEvent[]
 
   createdAt                DateTime         @default(now())
   updatedAt                DateTime         @updatedAt
@@ -250,4 +251,33 @@ model Template {
 
   @@index([isPublished, category])
   @@index([slug])
+}
+
+
+// ─── Analytics & Visitor Tracking Models ─────────────────────────────────────
+
+enum AnalyticsEventType {
+  PROFILE_VIEW
+  PROJECT_VIEW
+  SOCIAL_CLICK
+  CV_DOWNLOAD
+}
+
+model AnalyticsEvent {
+  id          String             @id @default(uuid())
+
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  eventType   AnalyticsEventType @default(PROFILE_VIEW)
+  targetId    String?            // If PROJECT_VIEW -> projectId. If SOCIAL_CLICK -> 'whatsapp', 'github', 'linkedin', etc.
+  targetTitle String?            // e.g. Project title or Social platform name
+  visitorIp   String?
+  userAgent   String?
+  referrer    String?
+
+  createdAt   DateTime           @default(now())
+
+  @@index([userId, eventType, createdAt])
+  @@index([userId, createdAt])
 }

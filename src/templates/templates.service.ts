@@ -9,7 +9,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Prisma, TemplateCategory } from '@prisma/client';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
-import { UpdateUserThemeDto } from './dto/update-user-theme.dto';
+import { UpdateSingleSectionDto, UpdateUserThemeDto } from './dto/update-user-theme.dto';
 import { LayoutConfig, SectionBlock, UserCustomConfig } from './interfaces/layout-config.interface';
 
 @Injectable()
@@ -18,6 +18,14 @@ export class TemplatesService {
     private readonly prisma: PrismaService,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
+
+  async uploadAsset(file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+    const uploaded: any = await this.cloudinaryService.uploadImage(file);
+    return { url: uploaded.secure_url };
+  }
 
   // ─── ADMIN BUILDER METHODS ──────────────────────────────────────────────────
 
@@ -352,12 +360,99 @@ export class TemplatesService {
     }
 
     const existingConfig = (profile.userCustomConfig as UserCustomConfig) || {};
+    let updatedSections = existingConfig.sections;
+    if (dto.sections) {
+      const sectionMap = new Map((existingConfig.sections || []).map((s) => [s.id, s]));
+      for (const override of dto.sections) {
+        const prev = sectionMap.get(override.id);
+        sectionMap.set(override.id, {
+          ...(prev || {}),
+          ...override,
+          props: {
+            ...(prev?.props || {}),
+            ...(override.props || {}),
+          },
+        });
+      }
+      updatedSections = Array.from(sectionMap.values());
+    }
+
     const updatedConfig: UserCustomConfig = {
       theme: {
         ...(existingConfig.theme || {}),
         ...(dto.theme || {}),
       },
-      sections: dto.sections ?? existingConfig.sections,
+      sections: updatedSections,
+    };
+
+    const updatedProfile = await this.prisma.profile.update({
+      where: { userId },
+      data: {
+        userCustomConfig: updatedConfig as any,
+      },
+      include: { template: true },
+    });
+
+    let template = updatedProfile.template;
+    if (!template) {
+      template = await this.prisma.template.findFirst({
+        where: { isDefault: true, isPublished: true },
+      });
+    }
+
+    const resolvedLayout = this.resolveLayout(template?.layoutConfig, updatedConfig);
+
+    return {
+      profile: updatedProfile,
+      userCustomConfig: updatedConfig,
+      resolvedLayout,
+    };
+  }
+
+  async updateUserSectionConfig(
+    userId: string,
+    sectionId: string,
+    dto: UpdateSingleSectionDto,
+  ) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      include: { template: true },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    const existingConfig = (profile.userCustomConfig as UserCustomConfig) || {};
+    const existingSections = existingConfig.sections || [];
+    const sectionIndex = existingSections.findIndex((s) => s.id === sectionId);
+
+    const updatedSections = [...existingSections];
+    if (sectionIndex >= 0) {
+      const prev = existingSections[sectionIndex];
+      updatedSections[sectionIndex] = {
+        ...prev,
+        title: dto.title ?? prev.title,
+        variant: dto.variant ?? prev.variant,
+        isVisible: dto.isVisible !== undefined ? dto.isVisible : prev.isVisible,
+        props: {
+          ...(prev.props || {}),
+          ...(dto.props || {}),
+        },
+      };
+    } else {
+      updatedSections.push({
+        id: sectionId,
+        title: dto.title,
+        variant: dto.variant,
+        isVisible: dto.isVisible !== undefined ? dto.isVisible : true,
+        props: dto.props || {},
+      });
+    }
+
+    const updatedConfig: UserCustomConfig = {
+      ...existingConfig,
+      sections: updatedSections,
     };
 
     const updatedProfile = await this.prisma.profile.update({
@@ -562,12 +657,113 @@ export class TemplatesService {
     }
 
     const existingConfig = (profile.userCustomConfig as UserCustomConfig) || {};
+    let updatedSections = existingConfig.sections;
+    if (dto.sections) {
+      const sectionMap = new Map((existingConfig.sections || []).map((s) => [s.id, s]));
+      for (const override of dto.sections) {
+        const prev = sectionMap.get(override.id);
+        sectionMap.set(override.id, {
+          ...(prev || {}),
+          ...override,
+          props: {
+            ...(prev?.props || {}),
+            ...(override.props || {}),
+          },
+        });
+      }
+      updatedSections = Array.from(sectionMap.values());
+    }
+
     const updatedConfig: UserCustomConfig = {
       theme: {
         ...(existingConfig.theme || {}),
         ...(dto.theme || {}),
       },
-      sections: dto.sections ?? existingConfig.sections,
+      sections: updatedSections,
+    };
+
+    const updatedProfile: any = await (this.prisma as any).businessProfile.update({
+      where: { userId },
+      data: {
+        userCustomConfig: updatedConfig as any,
+      },
+      include: { template: true },
+    });
+
+    let template = updatedProfile.template;
+    if (!template) {
+      template = await this.prisma.template.findFirst({
+        where: {
+          isDefault: true,
+          isPublished: true,
+          category: TemplateCategory.BUSINESS,
+        },
+      });
+
+      if (!template) {
+        template = await this.prisma.template.findFirst({
+          where: { isDefault: true, isPublished: true },
+        });
+      }
+    }
+
+    const resolvedLayout = this.resolveLayout(
+      template?.layoutConfig,
+      updatedConfig,
+      TemplateCategory.BUSINESS,
+    );
+
+    return {
+      businessProfile: updatedProfile,
+      userCustomConfig: updatedConfig,
+      resolvedLayout,
+    };
+  }
+
+  async updateBusinessSectionConfig(
+    userId: string,
+    sectionId: string,
+    dto: UpdateSingleSectionDto,
+  ) {
+    const profile: any = await (this.prisma as any).businessProfile.findUnique({
+      where: { userId },
+      include: { template: true },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Business profile not found');
+    }
+
+    const existingConfig = (profile.userCustomConfig as UserCustomConfig) || {};
+    const existingSections = existingConfig.sections || [];
+    const sectionIndex = existingSections.findIndex((s) => s.id === sectionId);
+
+    const updatedSections = [...existingSections];
+    if (sectionIndex >= 0) {
+      const prev = existingSections[sectionIndex];
+      updatedSections[sectionIndex] = {
+        ...prev,
+        title: dto.title ?? prev.title,
+        variant: dto.variant ?? prev.variant,
+        isVisible: dto.isVisible !== undefined ? dto.isVisible : prev.isVisible,
+        props: {
+          ...(prev.props || {}),
+          ...(dto.props || {}),
+        },
+      };
+    } else {
+      updatedSections.push({
+        id: sectionId,
+        title: dto.title,
+        variant: dto.variant,
+        isVisible: dto.isVisible !== undefined ? dto.isVisible : true,
+        props: dto.props || {},
+      });
+    }
+
+    const updatedConfig: UserCustomConfig = {
+      ...existingConfig,
+      sections: updatedSections,
     };
 
     const updatedProfile: any = await (this.prisma as any).businessProfile.update({
@@ -793,13 +989,31 @@ export class TemplatesService {
         {
           id: 'hero-business-default',
           type: 'HERO_PROFILE',
+          title: 'Brand Hero',
           variant: 'BUSINESS_HERO',
           isVisible: true,
           props: { showBanner: true, showLogo: true },
         },
         {
+          id: 'clients-business-default',
+          type: 'CLIENTS_LOGO',
+          title: 'Trusted by Leaders',
+          variant: 'MARQUEE_GRID',
+          isVisible: true,
+          props: {
+            title: 'Trusted by Leading Brands & Startups',
+            logos: [
+              { name: 'Acme Technologies', logoUrl: '' },
+              { name: 'Starlight Ventures', logoUrl: '' },
+              { name: 'Nexus Dynamics', logoUrl: '' },
+              { name: 'Apex Studios', logoUrl: '' },
+            ],
+          },
+        },
+        {
           id: 'about-business-default',
           type: 'ABOUT_ME',
+          title: 'About Company',
           variant: 'COMPANY_OVERVIEW',
           isVisible: true,
           props: {},
@@ -807,20 +1021,125 @@ export class TemplatesService {
         {
           id: 'services-business-default',
           type: 'SERVICES_GRID',
+          title: 'Our Services',
           variant: 'CARD_GRID_3COL',
           isVisible: true,
           props: { showPricing: true },
         },
         {
+          id: 'stats-business-default',
+          type: 'COMPANY_STATS',
+          title: 'Track Record',
+          variant: 'STATS_COUNTER',
+          isVisible: true,
+          props: {
+            stats: [
+              { value: '50+', label: 'Projects Completed' },
+              { value: '99%', label: 'Client Satisfaction' },
+              { value: '5+', label: 'Years in Business' },
+              { value: '15+', label: 'Specialists' },
+            ],
+          },
+        },
+        {
           id: 'projects-business-default',
           type: 'PROJECT_LIST',
+          title: 'Featured Case Studies',
           variant: 'PORTFOLIO_SHOWCASE',
           isVisible: true,
           props: { limit: 6 },
         },
         {
+          id: 'process-business-default',
+          type: 'PROCESS_WORKFLOW',
+          title: 'Our Working Process',
+          variant: 'STEP_CARDS',
+          isVisible: true,
+          props: {
+            steps: [
+              {
+                step: '01',
+                title: 'Discovery & Scope',
+                description: 'Deep dive into requirements, system architecture, and goal alignment.',
+              },
+              {
+                step: '02',
+                title: 'UI/UX & Prototyping',
+                description: 'Crafting responsive user interfaces with seamless design systems.',
+              },
+              {
+                step: '03',
+                title: 'Agile Development',
+                description: 'Clean coding standards, sprint demos, and automated quality testing.',
+              },
+              {
+                step: '04',
+                title: 'Deployment & SLA',
+                description: 'Smooth cloud deployment, documentation handover, and ongoing support.',
+              },
+            ],
+          },
+        },
+        {
+          id: 'testimonials-business-default',
+          type: 'TESTIMONIALS',
+          title: 'Client Testimonials',
+          variant: 'TESTIMONIAL_CAROUSEL',
+          isVisible: true,
+          props: {
+            testimonials: [
+              {
+                clientName: 'Alexander Wright',
+                clientRole: 'VP of Product',
+                clientCompany: 'FinTech Innovations',
+                avatarUrl: '',
+                rating: 5,
+                content:
+                  'They delivered our core MVP 2 weeks ahead of schedule. The engineering discipline and communication throughout the sprints were outstanding.',
+              },
+            ],
+          },
+        },
+        {
+          id: 'faq-business-default',
+          type: 'FAQ_ACCORDION',
+          title: 'Frequently Asked Questions',
+          variant: 'ACCORDION_LIST',
+          isVisible: true,
+          props: {
+            faqs: [
+              {
+                question: 'What is the typical timeline for an agency project?',
+                answer: 'Most MVPs and web solutions are completed within 4 to 8 weeks depending on complexity.',
+              },
+              {
+                question: 'Do you offer post-launch maintenance & bug warranty?',
+                answer: 'Yes, we provide 30 days of complimentary bug warranty and flexible monthly SLA maintenance retainer plans.',
+              },
+              {
+                question: 'Who owns the intellectual property and code repository?',
+                answer: 'You own 100% of all intellectual property, git repositories, and design assets upon project delivery.',
+              },
+            ],
+          },
+        },
+        {
+          id: 'cta-business-default',
+          type: 'CTA_BANNER',
+          title: 'Ready to Build?',
+          variant: 'GRADIENT_BANNER',
+          isVisible: true,
+          props: {
+            title: 'Have a project in mind? Let’s make it happen.',
+            description: 'Book a free 15-minute discovery consultation to discuss scope, timeline, and tech stack.',
+            primaryButtonText: 'Schedule Consultation',
+            primaryButtonUrl: '#contact',
+          },
+        },
+        {
           id: 'contact-business-default',
           type: 'CONTACT_SECTION',
+          title: 'Get In Touch',
           variant: 'BUSINESS_CONTACT_CARD',
           isVisible: true,
           props: {},

@@ -6,7 +6,9 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -15,13 +17,14 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { TemplateCategory } from '@prisma/client';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/detectors/create-user.decorator';
 
 import { TemplatesService } from './templates.service';
 import { ApplyTemplateDto } from './dto/apply-template.dto';
-import { UpdateUserThemeDto } from './dto/update-user-theme.dto';
+import { UpdateSingleSectionDto, UpdateUserThemeDto } from './dto/update-user-theme.dto';
 import { ReorderSectionsDto } from './dto/reorder-sections.dto';
 
 @ApiTags('Templates (Public & User)')
@@ -64,6 +67,18 @@ export class TemplatesController {
     @Body() dto: UpdateUserThemeDto,
   ) {
     return this.templatesService.updateUserCustomConfig(user.userId, dto);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update a specific section config (props, title, isVisible) for current user' })
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/sections/:sectionId')
+  updateSection(
+    @CurrentUser() user: any,
+    @Param('sectionId') sectionId: string,
+    @Body() dto: UpdateSingleSectionDto,
+  ) {
+    return this.templatesService.updateUserSectionConfig(user.userId, sectionId, dto);
   }
 
   @ApiBearerAuth()
@@ -118,6 +133,18 @@ export class TemplatesController {
   }
 
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update a specific section config (props, title, isVisible) for current user business profile' })
+  @UseGuards(JwtAuthGuard)
+  @Patch('business/me/sections/:sectionId')
+  updateBusinessSection(
+    @CurrentUser() user: any,
+    @Param('sectionId') sectionId: string,
+    @Body() dto: UpdateSingleSectionDto,
+  ) {
+    return this.templatesService.updateBusinessSectionConfig(user.userId, sectionId, dto);
+  }
+
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Reorder sections for current user business portfolio (Drag & Drop)' })
   @UseGuards(JwtAuthGuard)
   @Patch('business/me/reorder-sections')
@@ -136,9 +163,24 @@ export class TemplatesController {
     return this.templatesService.resetBusinessCustomConfig(user.userId);
   }
 
+  // ─── ASSET UPLOADER FOR THEME BLOCKS ────────────────────────────────────────
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Upload an image asset for theme custom sections (logos, avatars, etc.)' })
+  @UseGuards(JwtAuthGuard)
+  @Post('upload-asset')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadAsset(
+    @CurrentUser() user: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.templatesService.uploadAsset(file);
+  }
+
   @ApiOperation({ summary: 'Get preview detail of a published template by id or slug' })
   @Get(':id')
   findOnePublished(@Param('id') id: string) {
     return this.templatesService.findOnePublished(id);
   }
 }
+

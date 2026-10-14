@@ -18,6 +18,7 @@ import { BusinessServicesModule } from './business-services/business-services.mo
 import { BusinessProjectsModule } from './business-projects/business-projects.module';
 import { EmailModule } from './email/email.module';
 import { TemplatesModule } from './templates/templates.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { TemplatesModule } from './templates/templates.module';
     BusinessServicesModule,
     BusinessProjectsModule,
     TemplatesModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
