@@ -169,6 +169,14 @@ export class UsersService {
             data.role = dto.role;
         }
 
+        if (dto.isEmailVerified !== undefined) {
+            data.isEmailVerified = dto.isEmailVerified;
+            if (dto.isEmailVerified) {
+                data.emailVerificationToken = null;
+                data.emailVerificationExpires = null;
+            }
+        }
+
         return this.prisma.user.update({
             where: { id },
             data,
@@ -176,6 +184,7 @@ export class UsersService {
                 id: true,
                 email: true,
                 role: true,
+                isEmailVerified: true,
                 updatedAt: true,
             },
         });
