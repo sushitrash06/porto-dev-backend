@@ -9,6 +9,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Prisma, TemplateCategory } from '@prisma/client';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
+import { UploadHtmlTemplateDto, UpdateHtmlTemplateDto } from './dto/upload-html-template.dto';
 import { UpdateSingleSectionDto, UpdateUserThemeDto } from './dto/update-user-theme.dto';
 import { LayoutConfig, SectionBlock, UserCustomConfig } from './interfaces/layout-config.interface';
 
@@ -56,6 +57,115 @@ export class TemplatesService {
         isDefault: dto.isDefault ?? false,
         layoutConfig: dto.layoutConfig as any,
         createdById: userId,
+      },
+    });
+  }
+
+  async createFromHtml(
+    userId: string,
+    dto: UploadHtmlTemplateDto,
+    files?: { htmlFile?: Express.Multer.File[]; cssFile?: Express.Multer.File[] },
+  ) {
+    const existing = await this.prisma.template.findUnique({
+      where: { slug: dto.slug },
+    });
+
+    if (existing) {
+      throw new ConflictException(`Template with slug '${dto.slug}' already exists`);
+    }
+
+    const html = files?.htmlFile?.[0]
+      ? files.htmlFile[0].buffer.toString('utf8')
+      : dto.htmlContent || '';
+
+    const css = files?.cssFile?.[0]
+      ? files.cssFile[0].buffer.toString('utf8')
+      : dto.cssContent || '';
+
+    if (!html.trim()) {
+      throw new BadRequestException(
+        'HTML template content is required (either upload an .html file or provide htmlContent)',
+      );
+    }
+
+    const layoutConfig: LayoutConfig = {
+      templateType: 'CUSTOM_HTML',
+      customHtml: html,
+      customCss: css,
+      theme: {
+        fontFamily: 'Inter',
+        primaryColor: '#8B6CF6',
+        secondaryColor: '#4697F5',
+        backgroundColor: '#0F172A',
+        surfaceColor: '#1E293B',
+        textColor: '#F8FAFC',
+        textSecondaryColor: '#94A3B8',
+        borderRadius: '12px',
+        darkMode: true,
+      },
+      sections: [],
+    };
+
+    return this.prisma.template.create({
+      data: {
+        slug: dto.slug,
+        name: dto.name,
+        description: dto.description,
+        category: dto.category ?? TemplateCategory.DEVELOPER,
+        isPublished: dto.isPublished ?? false,
+        isDefault: false,
+        layoutConfig: layoutConfig as any,
+        createdById: userId,
+      },
+    });
+  }
+
+  async updateHtmlTemplate(
+    id: string,
+    dto: UpdateHtmlTemplateDto,
+    files?: { htmlFile?: Express.Multer.File[]; cssFile?: Express.Multer.File[] },
+  ) {
+    const template = await this.findOneAdmin(id);
+
+    if (dto.slug && dto.slug !== template.slug) {
+      const existing = await this.prisma.template.findUnique({
+        where: { slug: dto.slug },
+      });
+      if (existing) {
+        throw new ConflictException(`Template with slug '${dto.slug}' already exists`);
+      }
+    }
+
+    const currentConfig = (template.layoutConfig as any) || {};
+
+    const html = files?.htmlFile?.[0]
+      ? files.htmlFile[0].buffer.toString('utf8')
+      : dto.htmlContent !== undefined
+      ? dto.htmlContent
+      : currentConfig.customHtml || '';
+
+    const css = files?.cssFile?.[0]
+      ? files.cssFile[0].buffer.toString('utf8')
+      : dto.cssContent !== undefined
+      ? dto.cssContent
+      : currentConfig.customCss || '';
+
+    const updatedConfig: LayoutConfig = {
+      ...currentConfig,
+      templateType: 'CUSTOM_HTML',
+      customHtml: html,
+      customCss: css,
+    };
+
+    return this.prisma.template.update({
+      where: { id: template.id },
+      data: {
+        slug: dto.slug ?? template.slug,
+        name: dto.name ?? template.name,
+        description: dto.description ?? template.description,
+        category: dto.category ?? template.category,
+        isPublished: dto.isPublished !== undefined ? dto.isPublished : template.isPublished,
+        layoutConfig: updatedConfig as any,
       },
     });
   }
@@ -940,6 +1050,7 @@ export class TemplatesService {
         backgroundColor: '#0F172A',
         surfaceColor: '#1E293B',
         textColor: '#F8FAFC',
+        textSecondaryColor: '#94A3B8',
         borderRadius: '12px',
         darkMode: true,
       },
@@ -982,6 +1093,7 @@ export class TemplatesService {
         backgroundColor: '#0F172A',
         surfaceColor: '#1E293B',
         textColor: '#F8FAFC',
+        textSecondaryColor: '#94A3B8',
         borderRadius: '12px',
         darkMode: true,
       },
@@ -1215,6 +1327,9 @@ export class TemplatesService {
     }
 
     return {
+      templateType: base.templateType || 'BUILDER',
+      customHtml: base.customHtml,
+      customCss: base.customCss,
       theme: resolvedTheme,
       sections: resolvedSections,
     };

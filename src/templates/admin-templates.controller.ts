@@ -8,6 +8,7 @@ import {
   Post,
   Query,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -19,7 +20,7 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { TemplateCategory } from '@prisma/client';
 
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -30,6 +31,7 @@ import { CurrentUser } from 'src/auth/detectors/create-user.decorator';
 import { TemplatesService } from './templates.service';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
+import { UploadHtmlTemplateDto, UpdateHtmlTemplateDto } from './dto/upload-html-template.dto';
 
 @ApiTags('Admin/Templates (Theme Builder)')
 @ApiBearerAuth()
@@ -43,6 +45,59 @@ export class AdminTemplatesController {
   @Post()
   create(@CurrentUser() user: any, @Body() dto: CreateTemplateDto) {
     return this.templatesService.create(user.userId, dto);
+  }
+
+  @ApiOperation({ summary: 'Create new template by uploading HTML and CSS files or raw content' })
+  @ApiConsumes('multipart/form-data', 'application/json')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        slug: { type: 'string', example: 'retro-portfolio' },
+        name: { type: 'string', example: 'Retro 90s Portfolio' },
+        description: { type: 'string', example: 'Old-school cyberpunk HTML layout' },
+        category: { type: 'string', enum: Object.values(TemplateCategory) },
+        isPublished: { type: 'boolean', default: false },
+        htmlFile: { type: 'string', format: 'binary' },
+        cssFile: { type: 'string', format: 'binary' },
+        htmlContent: { type: 'string' },
+        cssContent: { type: 'string' },
+      },
+      required: ['slug', 'name'],
+    },
+  })
+  @Post('upload-html')
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'htmlFile', maxCount: 1 },
+      { name: 'cssFile', maxCount: 1 },
+    ]),
+  )
+  uploadHtmlTemplate(
+    @CurrentUser() user: any,
+    @Body() dto: UploadHtmlTemplateDto,
+    @UploadedFiles()
+    files?: { htmlFile?: Express.Multer.File[]; cssFile?: Express.Multer.File[] },
+  ) {
+    return this.templatesService.createFromHtml(user.userId, dto, files);
+  }
+
+  @ApiOperation({ summary: 'Update custom HTML and CSS template content or files' })
+  @ApiConsumes('multipart/form-data', 'application/json')
+  @Patch(':id/upload-html')
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'htmlFile', maxCount: 1 },
+      { name: 'cssFile', maxCount: 1 },
+    ]),
+  )
+  updateHtmlTemplate(
+    @Param('id') id: string,
+    @Body() dto: UpdateHtmlTemplateDto,
+    @UploadedFiles()
+    files?: { htmlFile?: Express.Multer.File[]; cssFile?: Express.Multer.File[] },
+  ) {
+    return this.templatesService.updateHtmlTemplate(id, dto, files);
   }
 
   @ApiOperation({ summary: 'Get all templates for admin (drafts, published, filterable)' })

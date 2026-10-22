@@ -36,10 +36,15 @@ export class ThemeTokensDto {
   @IsString()
   surfaceColor?: string;
 
-  @ApiPropertyOptional({ example: '#F8FAFC' })
+  @ApiPropertyOptional({ example: '#F8FAFC', description: 'Primary heading text color' })
   @IsOptional()
   @IsString()
   textColor?: string;
+
+  @ApiPropertyOptional({ example: '#94A3B8', description: 'Secondary body and muted text color' })
+  @IsOptional()
+  @IsString()
+  textSecondaryColor?: string;
 
   @ApiPropertyOptional({ example: '16px' })
   @IsOptional()
@@ -84,14 +89,31 @@ export class SectionBlockDto {
 }
 
 export class LayoutConfigDto {
-  @ApiProperty({ type: ThemeTokensDto })
+  @ApiPropertyOptional({ enum: ['BUILDER', 'CUSTOM_HTML'], default: 'BUILDER' })
+  @IsOptional()
+  @IsString()
+  templateType?: 'BUILDER' | 'CUSTOM_HTML';
+
+  @ApiPropertyOptional({ description: 'Raw custom HTML template string with placeholders' })
+  @IsOptional()
+  @IsString()
+  customHtml?: string;
+
+  @ApiPropertyOptional({ description: 'Custom CSS stylesheet string' })
+  @IsOptional()
+  @IsString()
+  customCss?: string;
+
+  @ApiPropertyOptional({ type: ThemeTokensDto })
+  @IsOptional()
   @ValidateNested()
   @Type(() => ThemeTokensDto)
-  theme: ThemeTokensDto;
+  theme?: ThemeTokensDto;
 
-  @ApiProperty({ type: [SectionBlockDto] })
+  @ApiPropertyOptional({ type: [SectionBlockDto] })
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => SectionBlockDto)
-  sections: SectionBlockDto[];
+  sections?: SectionBlockDto[];
 }
