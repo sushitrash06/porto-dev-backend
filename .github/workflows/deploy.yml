@@ -1,0 +1,51 @@
+name: Auto Deploy to VPS
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH and Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            # 1. Pastikan PATH NVM / Node / PM2 terbaca di non-interactive shell
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            export PATH=$PATH:/usr/local/bin:/usr/bin
+
+            # 2. Masuk ke direktori project backend di VPS
+            # Ubah path di bawah atau set secret VPS_APP_DIR jika foldermu berbeda
+            APP_DIR="${{ secrets.VPS_APP_DIR || '~/porto-dev-backend' }}"
+            if [ -d "$APP_DIR" ]; then
+              cd "$APP_DIR"
+            elif [ -d "/var/www/porto-dev-backend" ]; then
+              cd /var/www/porto-dev-backend
+            fi
+
+            echo "🚀 Menjalankan deployment di direktori: $(pwd)"
+
+            # 3. Pull kode terbaru
+            echo "📥 Menarik kode terbaru dari git..."
+            git pull origin master
+
+            # 4. Install dependencies & build production
+            echo "📦 Menginstall dependensi dan build NestJS..."
+            npm install
+            npm run build
+
+            # 5. Restart service di PM2
+            echo "🔄 Merestart aplikasi di PM2..."
+            pm2 restart porto-dev-backend || pm2 restart all || pm2 start dist/main.js --name porto-dev-backend
+
+            echo "✅ Deployment selesai! Backend berhasil diperbarui."
