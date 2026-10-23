@@ -19,33 +19,53 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           script: |
-            # 1. Pastikan PATH NVM / Node / PM2 terbaca di non-interactive shell
+            set -e
+
+            # 1. Pastikan PATH NVM / Node / PM2 terbaca
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            export PATH=$PATH:/usr/local/bin:/usr/bin
+            export PATH=$PATH:/usr/local/bin:/usr/bin:~/.npm-global/bin
 
-            # 2. Masuk ke direktori project backend di VPS
-            # Ubah path di bawah atau set secret VPS_APP_DIR jika foldermu berbeda
-            APP_DIR="${{ secrets.VPS_APP_DIR || '~/porto-dev-backend' }}"
-            if [ -d "$APP_DIR" ]; then
-              cd "$APP_DIR"
+            # 2. Cari direktori project backend secara akurat
+            TARGET_DIR=""
+
+            # Cek lokasi langsung dari folder kerja PM2 yang sedang aktif
+            PM2_DIR=$(pm2 jlist 2>/dev/null | grep -o '"pm_cwd":"[^"]*"' | head -n 1 | cut -d'"' -f4 || true)
+
+            if [ -n "$PM2_DIR" ] && [ -d "$PM2_DIR" ]; then
+              TARGET_DIR="$PM2_DIR"
+            elif [ -n "${{ secrets.VPS_APP_DIR }}" ] && [ -d "${{ secrets.VPS_APP_DIR }}" ]; then
+              TARGET_DIR="${{ secrets.VPS_APP_DIR }}"
+            elif [ -d "$HOME/porto-dev-backend" ]; then
+              TARGET_DIR="$HOME/porto-dev-backend"
             elif [ -d "/var/www/porto-dev-backend" ]; then
-              cd /var/www/porto-dev-backend
+              TARGET_DIR="/var/www/porto-dev-backend"
+            elif [ -d "/root/porto-dev-backend" ]; then
+              TARGET_DIR="/root/porto-dev-backend"
             fi
 
+            if [ -z "$TARGET_DIR" ] || [ ! -d "$TARGET_DIR" ]; then
+              echo "❌ Error: Direktori backend tidak ditemukan di VPS!"
+              pwd
+              exit 1
+            fi
+
+            cd "$TARGET_DIR"
             echo "🚀 Menjalankan deployment di direktori: $(pwd)"
 
-            # 3. Pull kode terbaru
-            echo "📥 Menarik kode terbaru dari git..."
-            git pull origin master
+            # 3. Tarik update terbaru
+            echo "📥 Menarik kode terbaru..."
+            git fetch origin master
+            git reset --hard origin/master
 
-            # 4. Install dependencies & build production
-            echo "📦 Menginstall dependensi dan build NestJS..."
+            # 4. Install & Build
+            echo "📦 Build NestJS..."
             npm install
             npm run build
 
-            # 5. Restart service di PM2
-            echo "🔄 Merestart aplikasi di PM2..."
-            pm2 restart porto-dev-backend || pm2 restart all || pm2 start dist/main.js --name porto-dev-backend
+            # 5. Restart PM2
+            echo "🔄 Restart service PM2..."
+            pm2 restart porto-dev-backend || pm2 restart all
+            pm2 save || true
 
             echo "✅ Deployment selesai! Backend berhasil diperbarui."
